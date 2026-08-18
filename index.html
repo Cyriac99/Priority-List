@@ -329,7 +329,7 @@
   /* ---------- Modal ---------- */
   .overlay {
     position: fixed; inset: 0; background: rgba(11,11,11,0.45); display: flex;
-    align-items: center; justify-content: center; padding: 20px; z-index: 50;
+    align-items: center; justify-content: center; padding: 20px; z-index: 70;
   }
   .overlay[hidden] { display: none; }
   .modal {
@@ -461,26 +461,26 @@
   .focus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   .focus-card {
     background: var(--surface-1); border: 1px solid var(--border); border-left: 5px solid var(--blue);
-    border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow);
-    transition: box-shadow .15s ease;
+    border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); cursor: pointer;
+    transition: box-shadow .15s ease, transform .1s ease;
   }
-  .focus-card.has-comments { cursor: pointer; }
-  .focus-card.has-comments:hover { box-shadow: var(--shadow-lg); }
-  .focus-card.expanded { box-shadow: var(--shadow-lg); }
+  .focus-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
   .focus-card .fc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
   .focus-card .fc-vendor { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
   .focus-card .fc-desc { font-size: 13px; color: var(--text-secondary); margin: 4px 0 14px; line-height: 1.45; }
   .focus-card .fc-row { display: flex; justify-content: space-between; align-items: baseline; padding-top: 10px; border-top: 1px dashed var(--gridline); }
-  .focus-card .fc-comments { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--gridline); }
-  .focus-card.expanded .fc-comments { display: block; }
+  .focus-card .fc-comments { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--gridline); }
   .focus-card .fc-comment-block { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px; }
   .focus-card .fc-comment-block:last-child { margin-bottom: 0; }
   .focus-card .fc-comment-block label {
     display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
     color: var(--muted); font-weight: 700; margin-bottom: 2px;
   }
-  .focus-card .fc-hint { font-size: 11px; color: var(--blue); font-weight: 600; margin-top: 10px; text-align: center; }
-  .focus-card.expanded .fc-hint { display: none; }
+  .focus-card .fc-hint {
+    font-size: 11px; color: var(--blue); font-weight: 600; margin-top: 10px; text-align: center;
+    opacity: 0; transition: opacity .15s ease;
+  }
+  .focus-card:hover .fc-hint { opacity: 1; }
   .focus-card .fc-tcv { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
   .focus-card .fc-expiry { font-size: 12.5px; color: var(--text-secondary); }
   .focus-card .fc-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11.5px; color: var(--muted); margin-top: 12px; }
@@ -7875,18 +7875,12 @@ function initLists() {
   state.lists = {};
   LIST_CATEGORIES.forEach(c => { state.lists[c.key] = uniqueSorted(state.items.map(i => i[c.key])); });
 }
-// Any value already sitting on a contract (typed in freely, or brought in via import)
-// is folded into its master list automatically, so nothing "disappears" from the dropdowns.
-function absorbItemValuesIntoLists() {
-  LIST_CATEGORIES.forEach(c => {
-    const seen = new Set((state.lists[c.key] || []).map(v => v.toLowerCase()));
-    state.items.forEach(i => {
-      const v = (i[c.key] || '').trim();
-      if (v && !seen.has(v.toLowerCase())) { state.lists[c.key].push(v); seen.add(v.toLowerCase()); }
-    });
-    state.lists[c.key].sort((a, b) => a.localeCompare(b));
-  });
-}
+// A value typed freely into a contract's Procurement/ExCo/Legal field (not picked from
+// the dropdown) is registered into its master list right away via ensureListValue() at
+// save time — see the contract-save handler. Rebuilding the dropdowns here must NOT also
+// re-scan every contract and re-add whatever text they currently hold, or a value that's
+// still in use on any contract could never actually be removed from the list (removing it
+// is explicitly meant to just retire it as a suggestion, while contracts keep their text).
 function ensureListValue(cat, val) {
   val = (val || '').trim();
   if (!val) return;
@@ -7898,7 +7892,6 @@ function ensureListValue(cat, val) {
 }
 
 function refreshFilterOptions() {
-  absorbItemValuesIntoLists();
   fillSelect('f-procurement', state.lists.procurement, 'All procurement', state.filters.procurement);
   fillSelect('f-exco', state.lists.exco, 'All ExCo', state.filters.exco);
   fillSelect('f-legal', state.lists.legal, 'All legal', state.filters.legal);
@@ -7928,7 +7921,12 @@ function syncFilterUI() {
 
 function matchesActiveFilters(item) {
   const f = state.filters;
-  if (f.priority !== 'all') {
+  // On Hold contracts are paused, not irrelevant — they stay visible by default in every
+  // view regardless of a view's default priority/pending-legal narrowing (CFO's "priority
+  // 2/3 only", Legal's "pending only"), so nothing on hold silently disappears from view.
+  // An explicit Status filter (picking "On hold" or "Open" from the dropdown) still applies.
+  const isOnHold = item.status === 'ONHOLD';
+  if (f.priority !== 'all' && !isOnHold) {
     const allowed = f.priority.split(',').map(Number);
     if (!allowed.includes(item.priority)) return false;
   }
@@ -7941,7 +7939,7 @@ function matchesActiveFilters(item) {
   if (f.procurement !== 'all' && (item.procurement || '') !== f.procurement) return false;
   if (f.exco !== 'all' && (item.exco || '') !== f.exco) return false;
   if (f.legal !== 'all' && (item.legal || '') !== f.legal) return false;
-  if (f.pending !== 'all') {
+  if (f.pending !== 'all' && !isOnHold) {
     const pv = (item.pendingLegal || '').toLowerCase();
     if (f.pending === 'yes' && pv !== 'yes') return false;
     if (f.pending === 'no' && pv !== 'no') return false;
@@ -8306,7 +8304,7 @@ function focusCardHTML(item) {
   if ((item.comments || '').trim()) commentsBlocks.push(`<div class="fc-comment-block"><label>Comments</label>${esc(item.comments)}</div>`);
 
   return `
-    <div class="focus-card${hasComments ? ' has-comments' : ''}" style="border-left-color:${PRIORITY_BORDER[item.priority] || 'var(--muted)'}">
+    <div class="focus-card" data-id="${esc(item.id)}" title="Click to view / edit this contract" style="border-left-color:${PRIORITY_BORDER[item.priority] || 'var(--muted)'}">
       <div class="fc-top">
         <div class="fc-vendor">${esc(item.vendor)}</div>
       </div>
@@ -8316,7 +8314,8 @@ function focusCardHTML(item) {
         <span class="fc-expiry">${expiryCell(item.expiry)}</span>
       </div>
       <div class="fc-meta">${meta.join('')}</div>
-      ${hasComments ? `<div class="fc-comments">${commentsBlocks.join('')}</div><div class="fc-hint">▾ Click for Legal &amp; Procurement comments</div>` : ''}
+      ${hasComments ? `<div class="fc-comments">${commentsBlocks.join('')}</div>` : ''}
+      <div class="fc-hint">✎ Click to view &amp; edit</div>
     </div>`;
 }
 function openFocusView() {
@@ -8528,7 +8527,13 @@ function onModalSubmit(e) {
     legalComments: document.getElementById('m-legalComments').value.trim(),
     comments: document.getElementById('m-comments').value.trim(),
   };
-  if (rec.pendingLegal !== 'Yes') { rec.legalCompleted = ''; rec.legalCompletedDate = null; }
+  // "Legal completed" is only ever set via the dedicated Mark Completed button, never
+  // through this form — so every save through here starts that flag fresh. This matters
+  // most when Pending Legal is switched back to "Yes" for a new round of review: without
+  // this, the contract would keep showing its first "✓ Completed · <old date>" badge
+  // instead of the Mark Completed button, making it impossible to log the new round.
+  rec.legalCompleted = '';
+  rec.legalCompletedDate = null;
   ['procurement', 'exco', 'legal'].forEach(cat => ensureListValue(cat, rec[cat]));
   if (state.editingId) {
     const idx = state.items.findIndex(i => i.id === state.editingId);
@@ -8548,6 +8553,11 @@ function onModalSubmit(e) {
   }
   closeModal();
   renderAll();
+  // If this edit was made from Focus View (clicking a card opens this same modal on top
+  // of it), refresh the cards in place so the presenter sees the update immediately
+  // without needing to exit and reopen Focus View.
+  const focusView = document.getElementById('focusView');
+  if (focusView && !focusView.hidden) openFocusView();
 }
 
 // ============ Export (CSV) / Backup (JSON) / Import ============
@@ -8718,8 +8728,10 @@ async function boot() {
   document.getElementById('focusViewBtn').addEventListener('click', openFocusView);
   document.getElementById('exitFocusBtn').addEventListener('click', closeFocusView);
   document.getElementById('focusBody').addEventListener('click', e => {
-    const card = e.target.closest('.focus-card.has-comments');
-    if (card) card.classList.toggle('expanded');
+    const card = e.target.closest('.focus-card');
+    if (!card) return;
+    const item = state.items.find(i => i.id === card.dataset.id);
+    if (item) openModal(item);
   });
 
   const pinBtn = document.getElementById('pinToggleBtn');
