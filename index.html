@@ -237,6 +237,37 @@
   }
   .filterbar .fcount { font-size: 12px; color: var(--muted); margin-left: auto; white-space: nowrap; }
 
+  /* ---------- Multi-select filter dropdowns ---------- */
+  .msfilter { position: relative; }
+  .msfilter-btn {
+    border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-primary);
+    border-radius: 7px; padding: 7px 10px; font-size: 12.5px; max-width: 190px; outline: none;
+    cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+  }
+  .msfilter-btn::after { content: ' ▾'; opacity: .6; font-size: 10px; }
+  .msfilter-btn.active { border-color: var(--blue); color: var(--blue); }
+  .msfilter-panel {
+    position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 210px; max-width: 300px;
+    max-height: 280px; overflow-y: auto; background: var(--surface-1); border: 1px solid var(--border-strong);
+    border-radius: 9px; box-shadow: var(--shadow-lg); padding: 6px;
+  }
+  .msfilter-panel[hidden] { display: none; }
+  .msfilter-option {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
+    font-size: 12.5px; cursor: pointer;
+  }
+  .msfilter-option:hover { background: var(--page-plane); }
+  .msfilter-option input[type=checkbox] { margin: 0; accent-color: var(--blue); }
+  .msfilter-actions {
+    display: flex; gap: 4px; padding: 6px 6px 2px; border-top: 1px solid var(--gridline); margin-top: 4px;
+  }
+  .msfilter-actions button {
+    border: none; background: transparent; color: var(--blue); font-size: 11.5px; font-weight: 700;
+    cursor: pointer; padding: 4px 6px; border-radius: 5px;
+  }
+  .msfilter-actions button:hover { background: var(--page-plane); }
+  .msfilter-empty { padding: 8px; font-size: 12px; color: var(--muted); }
+
   /* ---------- Table ---------- */
   .table-wrap {
     background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
@@ -575,13 +606,13 @@
   <section id="tab-active">
     <div class="filterbar">
       <input type="search" id="f-search" placeholder="Search vendor, description, comments...">
-      <select id="f-priority"><option value="all">All priorities</option></select>
-      <select id="f-status"><option value="all">All statuses</option></select>
-      <select id="f-renewal"><option value="all">Renewal: all</option><option value="yes">Renewal: Yes</option><option value="no">Renewal: No</option></select>
-      <select id="f-procurement"><option value="all">All procurement</option></select>
-      <select id="f-exco"><option value="all">All ExCo</option></select>
-      <select id="f-legal"><option value="all">All legal</option></select>
-      <select id="f-pending"><option value="all">Pending legal: all</option></select>
+      <div class="msfilter" id="f-priority"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
+      <div class="msfilter" id="f-status"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
+      <div class="msfilter" id="f-renewal"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
+      <div class="msfilter" id="f-procurement"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
+      <div class="msfilter" id="f-exco"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
+      <div class="msfilter" id="f-legal"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
+      <div class="msfilter" id="f-pending"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
       <button class="btn small subtle" id="clearFilters">Clear filters</button>
       <button class="btn small subtle" id="pinToggleBtn" title="Freeze the Vendor and Actions columns while scrolling sideways">📌 Pin columns</button>
       <button class="btn small primary" id="focusViewBtn" title="Big, presentation-friendly view of the contracts currently shown">🔎 Focus View</button>
@@ -7641,7 +7672,9 @@ let state = {
   tab: 'active',
   online: false,     // true once successfully connected to a shared Supabase database
   view: null,        // { type: 'cfo'|'legal'|'procurement-all'|'procurement-individual', person }
-  filters: { search: '', priority: 'all', status: 'all', renewal: 'all', procurement: 'all', exco: 'all', legal: 'all', pending: 'all' },
+  // Each of these (besides search) is an array of selected values — an empty array
+  // means "no restriction" (everything shown), matching how the old "All ___" option worked.
+  filters: { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [] },
   closedFilters: { search: '', source: 'all' },
   logFilters: { search: '' },
   sort: { key: 'priority', dir: 'asc' },
@@ -7891,58 +7924,127 @@ function ensureListValue(cat, val) {
   }
 }
 
-function refreshFilterOptions() {
-  fillSelect('f-procurement', state.lists.procurement, 'All procurement', state.filters.procurement);
-  fillSelect('f-exco', state.lists.exco, 'All ExCo', state.filters.exco);
-  fillSelect('f-legal', state.lists.legal, 'All legal', state.filters.legal);
+// ---- Multi-select filter dropdowns (Priority / Status / Renewal / Procurement / ExCo / Legal / Pending) ----
+// Each is a button + checkbox panel instead of a plain <select>, so more than one value
+// can be chosen at once. FILTER_DEFS describes each one's short name (for the button
+// label), its placeholder text when nothing's selected, and how to compute its option list
+// (static for most, derived from the live managed lists for procurement/exco/legal).
+const FILTER_DEFS = {
+  priority:    { name: 'Priority',      placeholder: 'All priorities',      options: () => Object.entries(PRIORITY_META).map(([k, v]) => ({ value: k, label: v.label })) },
+  status:      { name: 'Status',        placeholder: 'All statuses',        options: () => [{ value: 'OPEN', label: STATUS_META.OPEN.label }, { value: 'ONHOLD', label: STATUS_META.ONHOLD.label }] },
+  renewal:     { name: 'Renewal',       placeholder: 'Renewal: all',        options: () => [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] },
+  procurement: { name: 'Procurement',   placeholder: 'All procurement',     options: () => (state.lists.procurement || []).map(v => ({ value: v, label: v })) },
+  exco:        { name: 'ExCo',          placeholder: 'All ExCo',            options: () => (state.lists.exco || []).map(v => ({ value: v, label: v })) },
+  legal:       { name: 'Legal',         placeholder: 'All legal',           options: () => (state.lists.legal || []).map(v => ({ value: v, label: v })) },
+  pending:     { name: 'Pending legal', placeholder: 'Pending legal: all',  options: () => [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] },
+};
 
+function msFilterButtonLabel(key) {
+  const def = FILTER_DEFS[key];
+  const sel = state.filters[key];
+  if (!sel.length) return def.placeholder;
+  if (sel.length === 1) {
+    const opt = def.options().find(o => o.value === sel[0]);
+    return `${def.name}: ${opt ? opt.label : sel[0]}`;
+  }
+  return `${def.name}: ${sel.length} selected`;
+}
+
+// Rebuilds every filter dropdown's button label and checkbox list from current state —
+// called whenever the table re-renders (options like procurement names can change) and
+// whenever a view is selected (so a view's default selections show correctly).
+function renderFilterBar() {
+  Object.keys(FILTER_DEFS).forEach(key => {
+    const container = document.getElementById('f-' + key);
+    if (!container) return;
+    const def = FILTER_DEFS[key];
+    const opts = def.options();
+    const sel = state.filters[key];
+    const btn = container.querySelector('.msfilter-btn');
+    btn.textContent = msFilterButtonLabel(key);
+    btn.classList.toggle('active', sel.length > 0);
+    const panel = container.querySelector('.msfilter-panel');
+    panel.innerHTML = opts.length
+      ? opts.map(o => `
+          <label class="msfilter-option">
+            <input type="checkbox" data-key="${key}" value="${esc(o.value)}" ${sel.includes(o.value) ? 'checked' : ''}>
+            <span>${esc(o.label)}</span>
+          </label>`).join('') + `
+          <div class="msfilter-actions">
+            <button type="button" data-act="all" data-key="${key}">Select all</button>
+            <button type="button" data-act="none" data-key="${key}">Clear</button>
+          </div>`
+      : `<div class="msfilter-empty">Nothing to filter by yet</div>`;
+  });
+}
+
+// Wires up each filter dropdown's open/close + checkbox toggling. Runs once at boot —
+// the button/panel elements themselves are never replaced, only their contents (via
+// renderFilterBar above), so listeners attached here keep working across re-renders.
+function wireFilterBar() {
+  document.querySelectorAll('.msfilter').forEach(container => {
+    const btn = container.querySelector('.msfilter-btn');
+    const panel = container.querySelector('.msfilter-panel');
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const wasHidden = panel.hidden;
+      document.querySelectorAll('.msfilter-panel').forEach(p => { p.hidden = true; });
+      panel.hidden = !wasHidden;
+    });
+    panel.addEventListener('click', e => e.stopPropagation());
+    panel.addEventListener('change', e => {
+      const cb = e.target.closest('input[type=checkbox]');
+      if (!cb) return;
+      const arr = state.filters[cb.dataset.key];
+      const idx = arr.indexOf(cb.value);
+      if (cb.checked && idx === -1) arr.push(cb.value);
+      if (!cb.checked && idx !== -1) arr.splice(idx, 1);
+      renderFilterBar();
+      renderActive();
+    });
+    panel.addEventListener('click', e => {
+      const actBtn = e.target.closest('button[data-act]');
+      if (!actBtn) return;
+      const key = actBtn.dataset.key;
+      state.filters[key] = actBtn.dataset.act === 'all' ? FILTER_DEFS[key].options().map(o => o.value) : [];
+      renderFilterBar();
+      renderActive();
+    });
+  });
+  document.addEventListener('click', () => { document.querySelectorAll('.msfilter-panel').forEach(p => { p.hidden = true; }); });
+}
+
+function refreshFilterOptions() {
+  renderFilterBar();
   const dl = (id, list) => { document.getElementById(id).innerHTML = list.map(v => `<option value="${esc(v)}">`).join(''); };
   dl('dl-procurement', state.lists.procurement);
   dl('dl-exco', state.lists.exco);
   dl('dl-legal', state.lists.legal);
 }
-function fillSelect(id, values, placeholder, wantValue) {
-  const sel = document.getElementById(id);
-  const want = wantValue != null ? wantValue : (sel.value || 'all');
-  sel.innerHTML = `<option value="all">${placeholder}</option>` + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
-  sel.value = (want === 'all' || values.includes(want)) ? want : 'all';
-}
-// Static selects (priority/status/pending/search) aren't rebuilt each render — keep their
-// displayed value in sync with state, since a view can set filters programmatically.
 function syncFilterUI() {
   document.getElementById('f-search').value = state.filters.search;
-  document.getElementById('f-priority').value = state.filters.priority;
-  document.getElementById('f-status').value = state.filters.status;
-  document.getElementById('f-renewal').value = state.filters.renewal;
-  document.getElementById('f-pending').value = state.filters.pending;
+  renderFilterBar();
   document.getElementById('fc-search').value = state.closedFilters.search;
   document.getElementById('fc-source').value = state.closedFilters.source;
 }
 
 function matchesActiveFilters(item) {
   const f = state.filters;
-  // On Hold contracts are paused, not irrelevant — they stay visible by default in every
-  // view regardless of a view's default priority/pending-legal narrowing (CFO's "priority
-  // 2/3 only", Legal's "pending only"), so nothing on hold silently disappears from view.
-  // An explicit Status filter (picking "On hold" or "Open" from the dropdown) still applies.
-  const isOnHold = item.status === 'ONHOLD';
-  if (f.priority !== 'all' && !isOnHold) {
-    const allowed = f.priority.split(',').map(Number);
-    if (!allowed.includes(item.priority)) return false;
-  }
-  if (f.status !== 'all' && item.status !== f.status) return false;
-  if (f.renewal !== 'all') {
+  // Each filter (besides search) is an array of selected values — an empty array means
+  // that filter isn't narrowing anything, so every item passes it. A non-empty array
+  // requires the item's value to be one of the checked options (multi-select).
+  if (f.priority.length && !f.priority.includes(String(item.priority))) return false;
+  if (f.status.length && !f.status.includes(item.status)) return false;
+  if (f.renewal.length) {
     const rv = (item.renewal || '').toLowerCase();
-    if (f.renewal === 'yes' && rv !== 'yes') return false;
-    if (f.renewal === 'no' && rv !== 'no') return false;
+    if (!f.renewal.includes(rv)) return false;
   }
-  if (f.procurement !== 'all' && (item.procurement || '') !== f.procurement) return false;
-  if (f.exco !== 'all' && (item.exco || '') !== f.exco) return false;
-  if (f.legal !== 'all' && (item.legal || '') !== f.legal) return false;
-  if (f.pending !== 'all' && !isOnHold) {
+  if (f.procurement.length && !f.procurement.includes(item.procurement || '')) return false;
+  if (f.exco.length && !f.exco.includes(item.exco || '')) return false;
+  if (f.legal.length && !f.legal.includes(item.legal || '')) return false;
+  if (f.pending.length) {
     const pv = (item.pendingLegal || '').toLowerCase();
-    if (f.pending === 'yes' && pv !== 'yes') return false;
-    if (f.pending === 'no' && pv !== 'no') return false;
+    if (!f.pending.includes(pv)) return false;
   }
   if (f.search) {
     const hay = [item.vendor, item.description, item.comments, item.legalComments, item.responsible].join(' ').toLowerCase();
@@ -8650,10 +8752,13 @@ function viewLabel() {
 }
 function selectView(type, person) {
   state.view = { type, person: person || null };
-  state.filters = { search: '', priority: 'all', status: 'all', renewal: 'all', procurement: 'all', exco: 'all', legal: 'all', pending: 'all' };
-  if (type === 'cfo') state.filters.priority = '2,3';
-  if (type === 'legal') state.filters.pending = 'yes';
-  if (type === 'procurement-individual') state.filters.procurement = person;
+  // Status defaults to "Open" only in every view — On Hold contracts are paused, not
+  // actively being signed, so they're tucked away by default but always one click (the
+  // Status filter) away for anyone who wants to check on them.
+  state.filters = { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [] };
+  if (type === 'cfo') state.filters.priority = ['2', '3'];
+  if (type === 'legal') state.filters.pending = ['yes'];
+  if (type === 'procurement-individual') state.filters.procurement = [person];
   document.getElementById('landing').hidden = true;
   document.getElementById('appMain').hidden = false;
   document.getElementById('viewBadge').innerHTML = `Viewing as: ${esc(viewLabel())} <button id="changeViewBtn">Change view</button>`;
@@ -8712,15 +8817,9 @@ async function boot() {
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => setActiveTab(b.dataset.tab)));
 
   document.getElementById('f-search').addEventListener('input', e => { state.filters.search = e.target.value; renderActive(); });
-  document.getElementById('f-priority').addEventListener('change', e => { state.filters.priority = e.target.value; renderActive(); });
-  document.getElementById('f-status').addEventListener('change', e => { state.filters.status = e.target.value; renderActive(); });
-  document.getElementById('f-renewal').addEventListener('change', e => { state.filters.renewal = e.target.value; renderActive(); });
-  document.getElementById('f-procurement').addEventListener('change', e => { state.filters.procurement = e.target.value; renderActive(); });
-  document.getElementById('f-exco').addEventListener('change', e => { state.filters.exco = e.target.value; renderActive(); });
-  document.getElementById('f-legal').addEventListener('change', e => { state.filters.legal = e.target.value; renderActive(); });
-  document.getElementById('f-pending').addEventListener('change', e => { state.filters.pending = e.target.value; renderActive(); });
+  wireFilterBar();
   document.getElementById('clearFilters').addEventListener('click', () => {
-    state.filters = { search: '', priority: 'all', status: 'all', renewal: 'all', procurement: 'all', exco: 'all', legal: 'all', pending: 'all' };
+    state.filters = { search: '', priority: [], status: [], renewal: [], procurement: [], exco: [], legal: [], pending: [] };
     syncFilterUI();
     renderActive();
   });
@@ -8742,11 +8841,6 @@ async function boot() {
     pinBtn.classList.toggle('active', state.pinColumns);
   });
 
-  document.getElementById('f-status').innerHTML = `<option value="all">All statuses</option><option value="OPEN">Open</option><option value="ONHOLD">On hold</option>`;
-  document.getElementById('f-priority').innerHTML = `<option value="all">All priorities</option>` +
-    Object.entries(PRIORITY_META).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('') +
-    `<option value="2,3">This Week + Next Week</option>`;
-  document.getElementById('f-pending').innerHTML = `<option value="all">Pending legal: all</option><option value="yes">Pending legal: Yes</option><option value="no">Pending legal: No</option>`;
 
   document.getElementById('fc-search').addEventListener('input', e => { state.closedFilters.search = e.target.value; renderClosed(); });
   document.getElementById('fc-source').addEventListener('change', e => { state.closedFilters.source = e.target.value; renderClosed(); });
