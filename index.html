@@ -292,6 +292,7 @@
   tbody td { padding: 10px 12px; border-bottom: 1px solid var(--gridline); vertical-align: top; }
   tbody tr:hover { background: var(--page-plane); }
   tbody tr:last-child td { border-bottom: none; }
+  #activeBody tr { cursor: pointer; }
   td.vendor { font-weight: 600; min-width: 150px; }
   td.desc { color: var(--text-secondary); max-width: 220px; }
   td.comments, td.legal-comments { color: var(--text-secondary); max-width: 230px; font-size: 12.5px; }
@@ -393,6 +394,44 @@
   .field .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
   .modal-foot {
     display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px;
+    border-top: 1px solid var(--gridline); position: sticky; bottom: 0; background: var(--surface-1);
+  }
+
+  /* ---------- Item Detail View (click a table row to see one contract, big and clear) ---------- */
+  #itemDetailOverlay { z-index: 65; }
+  .detail-card {
+    background: var(--surface-1); color: var(--text-primary); border-radius: 16px;
+    width: 100%; max-width: 640px; max-height: 88vh; overflow: auto;
+    box-shadow: var(--shadow-lg); border: 1px solid var(--border); border-top: 6px solid var(--blue);
+  }
+  .detail-head { padding: 22px 26px 0; position: relative; }
+  .detail-close {
+    position: absolute; top: 18px; right: 18px; border: none; background: var(--surface-2);
+    color: var(--text-secondary); width: 30px; height: 30px; border-radius: 50%; font-size: 14px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .detail-close:hover { background: var(--gridline); color: var(--text-primary); }
+  .detail-vendor { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; padding-right: 40px; }
+  .detail-desc { font-size: 13.5px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5; }
+  .detail-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .detail-stats {
+    display: flex; gap: 24px; margin: 18px 26px; padding: 16px 0; border-top: 1px dashed var(--gridline);
+    border-bottom: 1px dashed var(--gridline);
+  }
+  .detail-stat .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; margin-bottom: 3px; }
+  .detail-stat .val { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; margin: 0 26px 18px;
+  }
+  .detail-field .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; margin-bottom: 3px; }
+  .detail-field .val { font-size: 13.5px; font-weight: 600; }
+  .detail-section {
+    margin: 0 26px 18px; padding-top: 16px; border-top: 1px dashed var(--gridline);
+  }
+  .detail-section .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+  .detail-section .val { font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
+  .detail-foot {
+    display: flex; justify-content: flex-end; gap: 8px; padding: 16px 26px;
     border-top: 1px solid var(--gridline); position: sticky; bottom: 0; background: var(--surface-1);
   }
 
@@ -722,6 +761,10 @@
 <datalist id="dl-procurement"></datalist>
 <datalist id="dl-exco"></datalist>
 <datalist id="dl-legal"></datalist>
+
+<div class="overlay" id="itemDetailOverlay" hidden>
+  <div class="detail-card" id="itemDetailCard"></div>
+</div>
 
 <div class="focusview" id="focusView" hidden>
   <div class="focus-topbar">
@@ -8150,7 +8193,7 @@ function renderActive() {
     body.innerHTML = `<tr><td colspan="${activeColsForView().length}"><div class="empty-state">No contracts match these filters.</div></td></tr>`;
   } else {
     body.innerHTML = filtered.map(item => `
-      <tr>
+      <tr data-id="${item.id}" title="Click to view this contract">
         <td>${priorityBadge(item.priority)}</td>
         <td class="vendor pin-left">${esc(item.vendor)}</td>
         <td class="desc">${clampWrap(item.description)}</td>
@@ -8168,7 +8211,6 @@ function renderActive() {
         <td>${dateSentCell(item)}</td>
         <td class="comments">${clampWrap(item.comments)}</td>
         <td class="actions-cell pin-right">
-          <button class="action-btn edit" title="Edit" data-act="edit" data-id="${item.id}">✎</button>
           <button class="action-btn close" title="Mark as signed &amp; closed" data-act="close" data-id="${item.id}">✔</button>
           <button class="action-btn delete" title="Delete" data-act="delete" data-id="${item.id}">🗑</button>
         </td>
@@ -8459,6 +8501,71 @@ function openFocusView() {
 }
 function closeFocusView() { document.getElementById('focusView').hidden = true; }
 
+// ============ Item Detail View (click any row in the To Be Signed table to see one
+// contract on its own — big, clean, and with an Edit button right there, instead of
+// hunting for the small pencil icon at the end of a crowded row) ============
+let detailViewItemId = null;
+function itemDetailHTML(item) {
+  const badges = [priorityBadge(item.priority), statusBadge(item.status)];
+  if ((item.renewal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-blue">Renewal</span>');
+  if ((item.pendingLegal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-critical">Pending Legal</span>');
+
+  const showLegalAction = !!(state.view && state.view.type === 'legal');
+
+  const field = (lbl, val) => `<div class="detail-field"><div class="lbl">${lbl}</div><div class="val">${val || '<span class="muted-cell">—</span>'}</div></div>`;
+
+  const sections = [];
+  if ((item.legalComments || '').trim()) sections.push(`<div class="detail-section"><div class="lbl">Legal Comments</div><div class="val">${esc(item.legalComments)}</div></div>`);
+  if ((item.comments || '').trim()) sections.push(`<div class="detail-section"><div class="lbl">Comments</div><div class="val">${esc(item.comments)}</div></div>`);
+
+  return `
+    <div class="detail-head">
+      <button type="button" class="detail-close" id="detailCloseBtn" title="Close">✕</button>
+      <div class="detail-vendor">${esc(item.vendor)}</div>
+      <div class="detail-desc">${esc(item.description)}</div>
+      <div class="detail-badges">${badges.join('')}</div>
+    </div>
+    <div class="detail-stats">
+      <div class="detail-stat"><div class="lbl">Yearly TCV</div><div class="val">${fmtCurrency(item.tcv)}</div></div>
+      <div class="detail-stat"><div class="lbl">Expiry</div><div class="val">${expiryCell(item.expiry)}</div></div>
+    </div>
+    <div class="detail-grid">
+      ${field('Procurement', esc(item.procurement))}
+      ${field('ExCo', esc(item.exco))}
+      ${field('Responsible', esc(item.responsible))}
+      ${field('Legal', esc(item.legal))}
+      ${field('Pending Legal', pendingCell(item.pendingLegal))}
+      ${field('Date Sent to Legal', dateSentCell(item))}
+      ${showLegalAction ? field('Legal Action', legalActionCell(item)) : ''}
+      ${field('PR on Kissflow', esc(item.kissflow))}
+    </div>
+    ${sections.join('')}
+    <div class="detail-foot">
+      <button type="button" class="btn subtle" id="detailCloseBtn2">Close</button>
+      <button type="button" class="btn primary" id="detailEditBtn">✎ Edit contract</button>
+    </div>`;
+}
+function openItemDetail(item) {
+  detailViewItemId = item.id;
+  document.getElementById('itemDetailCard').innerHTML = itemDetailHTML(item);
+  document.getElementById('itemDetailOverlay').hidden = false;
+  const close = () => closeItemDetail();
+  document.getElementById('detailCloseBtn').addEventListener('click', close);
+  document.getElementById('detailCloseBtn2').addEventListener('click', close);
+  document.getElementById('detailEditBtn').addEventListener('click', () => openModal(item));
+  // If legalcomplete's "Mark completed" button appears inside the detail view, wire it
+  // the same as the table's, then refresh this view in place to show the new state.
+  const legalBtn = document.querySelector('#itemDetailCard button[data-act="legalcomplete"]');
+  if (legalBtn) legalBtn.addEventListener('click', () => {
+    markLegalCompleted(item);
+    if (detailViewItemId === item.id) openItemDetail(item);
+  });
+}
+function closeItemDetail() {
+  document.getElementById('itemDetailOverlay').hidden = true;
+  detailViewItemId = null;
+}
+
 function updateConnectionBadge() {
   const el = document.getElementById('connBadge');
   const help = document.getElementById('helpBar');
@@ -8677,6 +8784,13 @@ function onModalSubmit(e) {
   // without needing to exit and reopen Focus View.
   const focusView = document.getElementById('focusView');
   if (focusView && !focusView.hidden) openFocusView();
+  // Same idea for the Item Detail View — if this edit was opened from there, refresh its
+  // content in place so the viewer sees the saved changes without re-clicking the row.
+  const detailOverlay = document.getElementById('itemDetailOverlay');
+  if (detailOverlay && !detailOverlay.hidden && detailViewItemId) {
+    const refreshed = state.items.find(i => i.id === detailViewItemId);
+    if (refreshed) openItemDetail(refreshed);
+  }
 }
 
 // ============ Export (CSV) / Backup (JSON) / Import ============
@@ -8821,6 +8935,14 @@ async function boot() {
   document.getElementById('modalCancel').addEventListener('click', closeModal);
   document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target.id === 'modalOverlay') closeModal(); });
   document.getElementById('modalForm').addEventListener('submit', onModalSubmit);
+  document.getElementById('itemDetailOverlay').addEventListener('click', e => { if (e.target.id === 'itemDetailOverlay') closeItemDetail(); });
+  document.getElementById('activeBody').addEventListener('click', e => {
+    if (e.target.closest('button')) return; // let action buttons / "Show more" toggles handle themselves
+    const tr = e.target.closest('tr[data-id]');
+    if (!tr) return;
+    const item = state.items.find(i => i.id === tr.dataset.id);
+    if (item) openItemDetail(item);
+  });
   document.getElementById('m-pendingLegal').addEventListener('change', () => {
     updateDateSentEnabled();
     const dateField = document.getElementById('m-dateSentToLegal');
