@@ -138,6 +138,77 @@
   .landing-person-btn:hover { background: var(--blue); color: #fff; border-color: transparent; }
   .landing-footer-note { margin-top: 18px; font-size: 12px; color: var(--muted); }
 
+  /* ---------- View Dashboard (CFO / Legal landing — visuals first, table one click away) ---------- */
+  .dashboard { max-width: 1400px; margin: 0 auto; padding: 20px 24px 60px; }
+  .dash-topbar {
+    display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;
+    gap: 12px; margin-bottom: 22px;
+  }
+  .dash-topbar h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .dash-topbar .dash-sub { color: var(--text-secondary); font-size: 13px; margin: 0; }
+  .dash-actions { display: flex; gap: 8px; flex: none; }
+  .dash-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+  @media (max-width: 1000px) { .dash-grid { grid-template-columns: repeat(2, 1fr); } .dash-card { grid-column: span 2 !important; } }
+  @media (max-width: 620px) { .dash-grid { grid-template-columns: 1fr; } .dash-card { grid-column: span 1 !important; } }
+  .dash-card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .dash-card--half { grid-column: span 3; }
+  .dash-card--third { grid-column: span 2; }
+  .dash-card h3 { font-size: 14px; margin: 0 0 2px; }
+  .dash-card-sub { font-size: 12px; color: var(--muted); margin: 0 0 16px; }
+  .dash-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+
+  /* horizontal bar rows (Priority Mix, Spend by Priority, Top 5) */
+  .dbar-list { display: flex; flex-direction: column; gap: 10px; }
+  .dbar-row {
+    display: grid; grid-template-columns: 96px 1fr auto; align-items: center; gap: 10px;
+    background: none; border: none; padding: 5px 4px; cursor: pointer; text-align: left; width: 100%;
+    border-radius: 8px; transition: background .15s ease; font-family: inherit;
+  }
+  .dbar-row:hover { background: var(--page-plane); }
+  .dbar-row.is-selected { background: var(--blue-bg); box-shadow: inset 0 0 0 1.5px var(--blue); }
+  .dbar-label {
+    font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .dbar-row.is-selected .dbar-label { color: var(--blue); }
+  .dbar-row--top5 .dbar-label { color: var(--text-primary); font-weight: 700; }
+  .dbar-row--top5.is-selected .dbar-label { color: var(--blue); }
+  .dbar-track { height: 14px; border-radius: 7px; background: var(--gridline); overflow: hidden; }
+  .dbar-fill { display: block; height: 100%; width: 0; border-radius: 7px; transition: width .3s ease; }
+  .dfill-critical { background: var(--critical); }
+  .dfill-serious  { background: var(--serious); }
+  .dfill-warning  { background: var(--warning); }
+  .dfill-good     { background: var(--good); }
+  .dfill-blue     { background: var(--blue); }
+  .dbar-value { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* two-segment stacked bars (Pending Legal, Renewals) */
+  .dstack {
+    display: flex; height: 34px; border-radius: 8px; overflow: hidden; background: var(--gridline);
+    gap: 2px;
+  }
+  .dstack-seg {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    border: none; padding: 0 10px; cursor: pointer; color: #fff; font-weight: 700; font-size: 12px;
+    min-width: 34px; transition: filter .15s ease; font-family: inherit;
+  }
+  .dstack-seg:hover { filter: brightness(1.08); }
+  .dstack-seg.is-selected { box-shadow: inset 0 0 0 3px rgba(255,255,255,.85); }
+  .theme-dark .dstack-seg.is-selected { box-shadow: inset 0 0 0 3px rgba(0,0,0,.55); }
+  .dstack-seg .dstack-count { font-variant-numeric: tabular-nums; }
+  .dstack-seg .dstack-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dseg-critical { background: var(--critical); }
+  .dseg-good     { background: var(--good); }
+  .dseg-blue     { background: var(--blue); }
+  .dseg-muted    { background: var(--muted); }
+  .dstack-legend { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+  .dstack-legend-item { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .dstack-legend-item .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dstack-legend-item--zero { opacity: .55; }
+
   /* ---------- Header ---------- */
   header.top {
     display: flex; align-items: flex-start; justify-content: space-between;
@@ -211,7 +282,22 @@
   .kpi.kpi-clickable.active { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue) inset; }
   .kpi.kpi-clickable .lbl::after { content: ' — click to filter'; opacity: 0; font-weight: 600; color: var(--blue); }
   .kpi.kpi-clickable:hover .lbl::after { opacity: .8; }
-  .kpi.kpi-clickable.active .lbl::after { content: ' — showing this only, click to clear'; opacity: .8; }
+  .kpi.kpi-clickable.active .lbl::after { content: ' — active, click to clear'; opacity: .8; }
+  /* Dashboard's own KPI row: every tile is clickable (a "view the list now" shortcut,
+     separate from the charts' toggle-to-build-a-filter behavior below it). */
+  .kpi--dash { cursor: pointer; transition: box-shadow .15s ease, transform .1s ease; }
+  .kpi--dash:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+  .kpi--dash.active { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue) inset; }
+  .kpis-toolbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+  /* Shared "Multi-select" opt-in switch — sits top-right of the table's KPI row and of
+     each multi-select-capable dashboard card. Off by default: a single click on the
+     visual it belongs to is a direct view, not an accumulating selection. */
+  .dash-multi-toggle {
+    display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
+    color: var(--muted); cursor: pointer; user-select: none; flex: none; white-space: nowrap;
+  }
+  .dash-multi-toggle input { accent-color: var(--blue); cursor: pointer; width: 14px; height: 14px; margin: 0; }
+  .dash-multi-toggle:has(input:checked) { color: var(--blue); }
 
   /* ---------- Tabs ---------- */
   .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--gridline); margin-bottom: 14px; flex-wrap: wrap; }
@@ -561,6 +647,22 @@
   .focus-card .fc-expiry { font-size: 12.5px; color: var(--text-secondary); }
   .focus-card .fc-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11.5px; color: var(--muted); margin-top: 12px; }
   .focus-empty { text-align: center; padding: 80px 20px; color: var(--muted); font-size: 14px; }
+
+  /* Same-vendor merged card: two (or more) contracts for one vendor, shown as one card
+     so the relationship is obvious, while each contract stays its own click target. */
+  .focus-card-merged { cursor: default; }
+  .focus-card-merged:hover { transform: none; }
+  .fc-multi-badge {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px;
+    background: var(--blue-bg); color: var(--blue); vertical-align: middle; margin-left: 6px;
+  }
+  .fc-merged-item {
+    cursor: pointer; border-radius: 10px; padding: 8px 10px; margin: 0 -10px; transition: background .15s ease;
+  }
+  .fc-merged-item:hover { background: var(--page-plane); }
+  .fc-merged-item .fc-hint { opacity: .55; }
+  .fc-merged-item:hover .fc-hint { opacity: 1; }
+  .fc-merged-divider { border-top: 1px dashed var(--gridline); margin: 2px 0 12px; }
 </style>
 </head>
 <body class="theme-light">
@@ -609,6 +711,22 @@
   </div>
 </div>
 
+<div class="dashboard" id="viewDashboard" hidden>
+  <div class="dash-topbar">
+    <div>
+      <h1 id="dashTitle">Dashboard</h1>
+      <p class="dash-sub" id="dashSubtitle"></p>
+    </div>
+    <div class="dash-actions">
+      <button class="btn icon-only subtle" id="dashThemeToggle" title="Toggle dark mode">🌙</button>
+      <button class="btn subtle" id="dashChangeViewBtn">Change view</button>
+      <button class="btn primary" id="dashViewListBtn">📋 View full list</button>
+    </div>
+  </div>
+  <div class="kpis" id="dashKpis"></div>
+  <div class="dash-grid" id="dashBody"></div>
+</div>
+
 <div class="app" id="appMain" hidden>
 
   <header class="top">
@@ -639,6 +757,12 @@
     <button class="btn small subtle" id="dismissHelp">Got it</button>
   </div>
 
+  <div class="kpis-toolbar">
+    <label class="dash-multi-toggle" title="On: select more than one KPI filter at once. Off: one click is exclusive.">
+      <input type="checkbox" id="kpiMultiToggle">
+      <span>Multi-select</span>
+    </label>
+  </div>
   <section class="kpis" id="kpis"></section>
 
   <nav class="tabs" id="tabs">
@@ -8077,6 +8201,15 @@ function syncFilterUI() {
   document.getElementById('fc-source').value = state.closedFilters.source;
 }
 
+// Adds val to state.filters[key] if it's not already selected, or removes it if it
+// is — the shared "multi-select toggle" behind every clickable filter visual (KPI
+// tiles, dashboard charts). Several toggles can be active on the same key at once.
+function toggleFilterValue(key, val) {
+  const arr = state.filters[key];
+  const idx = arr.indexOf(val);
+  if (idx === -1) arr.push(val); else arr.splice(idx, 1);
+}
+
 function matchesActiveFilters(item) {
   const f = state.filters;
   // Each filter (besides search) is an array of selected values — an empty array means
@@ -8085,14 +8218,17 @@ function matchesActiveFilters(item) {
   if (f.priority.length && !f.priority.includes(String(item.priority))) return false;
   if (f.status.length && !f.status.includes(item.status)) return false;
   if (f.renewal.length) {
-    const rv = (item.renewal || '').toLowerCase();
+    // Blank ("never set") counts as "No" — a contract nobody marked as a renewal
+    // is, for filtering purposes, not one.
+    const rv = (item.renewal || '').toLowerCase() || 'no';
     if (!f.renewal.includes(rv)) return false;
   }
   if (f.procurement.length && !f.procurement.includes(item.procurement || '')) return false;
   if (f.exco.length && !f.exco.includes(item.exco || '')) return false;
   if (f.legal.length && !f.legal.includes(item.legal || '')) return false;
   if (f.pending.length) {
-    const pv = (item.pendingLegal || '').toLowerCase();
+    // Same reasoning as renewal above — blank means "not (yet) pending".
+    const pv = (item.pendingLegal || '').toLowerCase() || 'no';
     if (!f.pending.includes(pv)) return false;
   }
   if (f.search) {
@@ -8409,35 +8545,55 @@ function renameListValue(cat, oldVal) {
   toast(`Renamed to "${trimmed}"`);
 }
 
+// Shared by the table's KPI row and the dashboard's KPI row — same five numbers,
+// same "which filter values are currently active" flags (now multi-select-aware via
+// .includes(), so more than one of Due today / Due this week / Pending legal can be
+// lit up at once).
+function kpiTileDefs(baseItems, filteredItems) {
+  const dueToday = filteredItems.filter(i => i.priority === 1).length;
+  const dueThisWeek = filteredItems.filter(i => i.priority === 2).length;
+  const pendingLegal = filteredItems.filter(i => (i.pendingLegal || '').toLowerCase() === 'yes').length;
+  const totalTCV = filteredItems.reduce((s, i) => s + (i.tcv || 0), 0);
+  const filtersActive = filteredItems.length !== baseItems.length;
+  return [
+    { key: 'shown', val: filteredItems.length, lbl: filtersActive ? 'Contracts shown (filtered)' : 'Contracts to be signed', color: 'var(--blue)' },
+    { key: 'dueToday', val: dueToday, lbl: 'Due today', color: 'var(--critical)', active: state.filters.priority.includes('1') },
+    { key: 'dueThisWeek', val: dueThisWeek, lbl: 'Due this week', color: 'var(--serious)', active: state.filters.priority.includes('2') },
+    { key: 'pendingLegal', val: pendingLegal, lbl: 'Pending legal action', color: 'var(--critical)', active: state.filters.pending.includes('yes') },
+    { key: 'tcv', val: 'AED ' + (totalTCV >= 1e6 ? (totalTCV/1e6).toFixed(1)+'M' : totalTCV >= 1e3 ? (totalTCV/1e3).toFixed(0)+'K' : totalTCV), lbl: 'TCV pending signature (of items priced)', color: 'var(--good)' },
+  ];
+}
+const KPI_TOGGLE_KEYS = ['dueToday', 'dueThisWeek', 'pendingLegal'];
 function renderKPIs(activeItems, filteredItems) {
   // KPI tiles reflect whatever is currently on screen — the active view's default
   // filters plus anything adjusted in the filter bar — so the numbers stay in sync
   // with the table below them.
-  const base = filteredItems;
-  const dueToday = base.filter(i => i.priority === 1).length;
-  const dueThisWeek = base.filter(i => i.priority === 2).length;
-  const pendingLegal = base.filter(i => (i.pendingLegal || '').toLowerCase() === 'yes').length;
-  const totalTCV = base.reduce((s, i) => s + (i.tcv || 0), 0);
   const closedCount = state.items.filter(i => i.status === 'CLOSED').length;
-  const filtersActive = base.length !== activeItems.length;
-
-  // "Due today", "Due this week", and "Pending legal action" double as one-click filters —
-  // clicking sets the matching Priority/Pending-legal filter directly (click again to clear).
-  const tiles = [
-    { val: base.length, lbl: filtersActive ? 'Contracts shown (filtered)' : 'Contracts to be signed', color: 'var(--blue)' },
-    { val: dueToday, lbl: 'Due today', color: 'var(--critical)', kpi: 'dueToday', active: state.filters.priority.length === 1 && state.filters.priority[0] === '1' },
-    { val: dueThisWeek, lbl: 'Due this week', color: 'var(--serious)', kpi: 'dueThisWeek', active: state.filters.priority.length === 1 && state.filters.priority[0] === '2' },
-    { val: pendingLegal, lbl: 'Pending legal action', color: 'var(--critical)', kpi: 'pendingLegal', active: state.filters.pending.length === 1 && state.filters.pending[0] === 'yes' },
-    { val: 'AED ' + (totalTCV >= 1e6 ? (totalTCV/1e6).toFixed(1)+'M' : totalTCV >= 1e3 ? (totalTCV/1e3).toFixed(0)+'K' : totalTCV), lbl: 'TCV pending signature (of items priced)', color: 'var(--good)' },
-  ];
+  const filtersActive = filteredItems.length !== activeItems.length;
+  const tiles = kpiTileDefs(activeItems, filteredItems);
+  // "Due today", "Due this week", and "Pending legal action" double as multi-select
+  // filters — clicking toggles that value in/out, and more than one can be on at once.
   document.getElementById('kpis').innerHTML = tiles.map(t => `
-    <div class="kpi${t.kpi ? ' kpi-clickable' : ''}${t.active ? ' active' : ''}"${t.kpi ? ` data-kpi="${t.kpi}"` : ''}>
+    <div class="kpi${KPI_TOGGLE_KEYS.includes(t.key) ? ' kpi-clickable' : ''}${t.active ? ' active' : ''}"${KPI_TOGGLE_KEYS.includes(t.key) ? ` data-kpi="${t.key}"` : ''}>
       <span class="bar" style="background:${t.color}"></span>
       <div class="val">${t.val}</div><div class="lbl">${t.lbl}</div>
     </div>`).join('');
   document.getElementById('footnote').textContent =
     `${closedCount} contracts signed & closed to date (this cycle + historical archive). Once a contract is signed, procurement marks it closed and it moves there. TCV totals only include line items where a numeric value was entered in the source sheet.` +
-    (filtersActive ? ` Numbers above reflect the ${base.length} of ${activeItems.length} contracts currently shown by your view/filters.` : '');
+    (filtersActive ? ` Numbers above reflect the ${filteredItems.length} of ${activeItems.length} contracts currently shown by your view/filters.` : '');
+}
+// The dashboard's own KPI row, sitting above the charts. Same five tiles as the table,
+// but every tile here navigates straight to the full list on click (a fast lane
+// alongside "View full list") rather than toggling a filter in place — the charts
+// below are where selections are built up.
+function renderDashboardKPIs(baseItems) {
+  const filtered = baseItems.filter(matchesActiveFilters);
+  const tiles = kpiTileDefs(baseItems, filtered);
+  document.getElementById('dashKpis').innerHTML = tiles.map(t => `
+    <div class="kpi kpi--dash${t.active ? ' active' : ''}" data-kpi="${t.key}" title="Click to view this in the full list">
+      <span class="bar" style="background:${t.color}"></span>
+      <div class="val">${t.val}</div><div class="lbl">${t.lbl}</div>
+    </div>`).join('');
 }
 
 function renderAll() {
@@ -8450,7 +8606,10 @@ function renderAll() {
 
 // ============ Focus View (big, presentation-friendly mode) ============
 const PRIORITY_BORDER = { 1: 'var(--critical)', 2: 'var(--serious)', 3: 'var(--warning)', 4: 'var(--good)' };
-function focusCardHTML(item) {
+// The content inside a card — everything except the vendor heading and outer wrapper —
+// shared by a lone card (focusCardHTML) and by each sub-item of a merged same-vendor
+// card (focusMergedCardHTML), so both stay in sync automatically.
+function focusCardBodyHTML(item) {
   const meta = [];
   if ((item.renewal || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-blue">Renewal</span>');
   if ((item.pendingLegal || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-critical">Pending Legal</span>');
@@ -8465,10 +8624,6 @@ function focusCardHTML(item) {
   if ((item.comments || '').trim()) commentsBlocks.push(`<div class="fc-comment-block"><label>Comments</label>${esc(item.comments)}</div>`);
 
   return `
-    <div class="focus-card" data-id="${esc(item.id)}" title="Click to view / edit this contract" style="border-left-color:${PRIORITY_BORDER[item.priority] || 'var(--muted)'}">
-      <div class="fc-top">
-        <div class="fc-vendor">${esc(item.vendor)}</div>
-      </div>
       <div class="fc-desc">${esc(item.description)}</div>
       <div class="fc-row">
         <span class="fc-tcv">${fmtCurrency(item.tcv)}</span>
@@ -8476,7 +8631,33 @@ function focusCardHTML(item) {
       </div>
       <div class="fc-meta">${meta.join('')}</div>
       ${hasComments ? `<div class="fc-comments">${commentsBlocks.join('')}</div>` : ''}
-      <div class="fc-hint">✎ Click to view &amp; edit</div>
+      <div class="fc-hint">✎ Click to view &amp; edit</div>`;
+}
+function focusCardHTML(item) {
+  return `
+    <div class="focus-card" data-id="${esc(item.id)}" title="Click to view / edit this contract" style="border-left-color:${PRIORITY_BORDER[item.priority] || 'var(--muted)'}">
+      <div class="fc-top">
+        <div class="fc-vendor">${esc(item.vendor)}</div>
+      </div>
+      ${focusCardBodyHTML(item)}
+    </div>`;
+}
+// Two or more contracts for the same vendor within the same priority group are shown
+// as one card — the shared vendor name up top, each contract still its own clickable/
+// editable block underneath, divided so the two (or more) stay clearly distinct.
+function focusMergedCardHTML(vendor, items) {
+  const borderColor = PRIORITY_BORDER[items[0].priority] || 'var(--muted)';
+  const subItems = items.map((item, idx) => `
+      ${idx > 0 ? '<div class="fc-merged-divider"></div>' : ''}
+      <div class="fc-merged-item" data-id="${esc(item.id)}" title="Click to view / edit this contract">
+        ${focusCardBodyHTML(item)}
+      </div>`).join('');
+  return `
+    <div class="focus-card focus-card-merged" style="border-left-color:${borderColor}">
+      <div class="fc-top">
+        <div class="fc-vendor">${esc(vendor)} <span class="fc-multi-badge">${items.length} contracts</span></div>
+      </div>
+      ${subItems}
     </div>`;
 }
 function openFocusView() {
@@ -8491,11 +8672,24 @@ function openFocusView() {
     const groups = [1, 2, 3, 4]
       .map(p => ({ p, items: filtered.filter(i => i.priority === p) }))
       .filter(g => g.items.length);
-    body.innerHTML = groups.map(g => `
+    body.innerHTML = groups.map(g => {
+      // Group this priority band's contracts by vendor so same-vendor ones can be
+      // shown together — a blank vendor never merges with another blank one.
+      const byVendor = new Map();
+      g.items.forEach(item => {
+        const key = (item.vendor || '').trim().toLowerCase() || `__id_${item.id}`;
+        if (!byVendor.has(key)) byVendor.set(key, []);
+        byVendor.get(key).push(item);
+      });
+      const cards = [...byVendor.values()]
+        .map(vendorItems => vendorItems.length > 1 ? focusMergedCardHTML(vendorItems[0].vendor, vendorItems) : focusCardHTML(vendorItems[0]))
+        .join('');
+      return `
       <div class="focus-section">
         <h3>${esc(PRIORITY_META[g.p].label)} <span class="badge ${PRIORITY_META[g.p].cls}">${g.items.length}</span></h3>
-        <div class="focus-grid">${g.items.map(focusCardHTML).join('')}</div>
-      </div>`).join('');
+        <div class="focus-grid">${cards}</div>
+      </div>`;
+    }).join('');
   }
   document.getElementById('focusView').hidden = false;
 }
@@ -8881,36 +9075,239 @@ function viewLabel() {
   if (state.view.type === 'procurement-individual') return `Procurement View — ${state.view.person}`;
   return VIEW_LABELS[state.view.type] || '';
 }
-function selectView(type, person) {
-  state.view = { type, person: person || null };
-  // Status defaults to "Open" only in every view — On Hold contracts are paused, not
-  // actively being signed, so they're tucked away by default but always one click (the
-  // Status filter) away for anyone who wants to check on them.
+// Resets state.filters to each view's starting point. Status defaults to "Open" only
+// in every view — On Hold contracts are paused, not actively being signed, so they're
+// tucked away by default but always one click (the Status filter) away for anyone who
+// wants to check on them. Pulled out of selectView so chart clicks (goToFilteredTable)
+// can rebuild the same OPEN-only base without duplicating this list.
+function applyViewDefaultFilters(type, person) {
   state.filters = { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [] };
   if (type === 'cfo') state.filters.priority = ['2', '3'];
   if (type === 'legal') state.filters.pending = ['yes'];
   if (type === 'procurement-individual') state.filters.procurement = [person];
+}
+function selectView(type, person) {
+  state.view = { type, person: person || null };
+  applyViewDefaultFilters(type, person);
+  document.getElementById('landing').hidden = true;
+  // CFO and Legal land on the visual dashboard first; every other view goes straight
+  // to the familiar table, unchanged from before.
+  if (type === 'cfo' || type === 'legal') showDashboard();
+  else showTable();
+}
+// Shows the existing table/KPI/filter screen exactly as it always has. Used both for
+// views that go here directly (procurement) and for CFO/Legal after "View full list"
+// or a dashboard KPI-card click (both just show whatever's currently in state.filters).
+function showTable() {
+  const type = state.view.type;
+  const isDashboardView = type === 'cfo' || type === 'legal';
+  document.getElementById('viewDashboard').hidden = true;
+  document.getElementById('landing').hidden = true;
+  document.getElementById('appMain').hidden = false;
   // An individual procurement view is already locked to that one person — showing a
   // Procurement filter that can only ever have one meaningful value is just clutter.
   document.getElementById('f-procurement').style.display = (type === 'procurement-individual') ? 'none' : '';
-  document.getElementById('landing').hidden = true;
-  document.getElementById('appMain').hidden = false;
-  document.getElementById('viewBadge').innerHTML = `Viewing as: ${esc(viewLabel())} <button id="changeViewBtn">Change view</button>`;
+  const dashBtn = isDashboardView ? ` <button id="tableDashboardBtn">📊 Dashboard</button>` : '';
+  document.getElementById('viewBadge').innerHTML = `Viewing as: ${esc(viewLabel())} <button id="changeViewBtn">Change view</button>${dashBtn}`;
   document.getElementById('changeViewBtn').addEventListener('click', backToLanding);
+  if (isDashboardView) document.getElementById('tableDashboardBtn').addEventListener('click', showDashboard);
   setActiveTab('active');
   syncFilterUI();
   renderAll();
 }
+// Shows the new visuals-first screen for CFO/Legal. Nothing about the table screen
+// changes — this is just a new stop in front of it.
+function showDashboard() {
+  // Re-apply this view's default filters every time the dashboard is (re)shown, so
+  // "View full list" always lands on the same starting point the view used to open
+  // to directly — never on whatever a previous chart click left behind.
+  applyViewDefaultFilters(state.view.type, state.view.person);
+  document.getElementById('landing').hidden = true;
+  document.getElementById('appMain').hidden = true;
+  document.getElementById('viewDashboard').hidden = false;
+  renderDashboard();
+}
 function backToLanding() {
   document.getElementById('landing').hidden = false;
   document.getElementById('appMain').hidden = true;
+  document.getElementById('viewDashboard').hidden = true;
+}
+
+// ============ View Dashboard (CFO / Legal — visuals first) ============
+// A single click on a chart or KPI tile is a direct view by default — it selects
+// exactly that one value and jumps straight to the matching list. Multi-select is an
+// explicit opt-in, switched on per visual via the toggle in that visual's corner; only
+// while it's on does clicking accumulate several values instead of replacing and
+// navigating. Purely local UI state — never persisted, always starts off.
+let kpiMultiSelect = false;
+let dashMultiSelect = { priority: false, spend: false, pending: false, renewal: false };
+
+function dashboardBaseItems() {
+  // Every dashboard number is computed from OPEN contracts only, matching the
+  // app-wide "default view is Open" convention — so the charts and the table a
+  // click lands on always agree.
+  return state.items.filter(i => i.status === 'OPEN');
+}
+function priorityBreakdown(items) {
+  return [1, 2, 3, 4].map(p => ({
+    val: String(p),
+    label: PRIORITY_META[p].label,
+    count: items.filter(i => i.priority === p).length,
+    colorClass: PRIORITY_META[p].cls.replace('badge-', ''),
+  }));
+}
+function spendBreakdown(items) {
+  return [1, 2, 3, 4].map(p => ({
+    val: String(p),
+    label: PRIORITY_META[p].label,
+    count: items.filter(i => i.priority === p).reduce((s, i) => s + (Number(i.tcv) || 0), 0),
+    colorClass: PRIORITY_META[p].cls.replace('badge-', ''),
+  }));
+}
+// The small header shared by every multi-select-capable dashboard card: the title +
+// subtitle on the left, a "Multi-select" opt-in switch in the top-right corner.
+// `multiGroup` is this card's key into dashMultiSelect — off by default, so a single
+// click on the chart below is a direct view; switching it on lets you build up a
+// selection across several bars/segments before viewing the list some other way.
+function dashCardHead(title, sub, multiGroup) {
+  const on = !!dashMultiSelect[multiGroup];
+  return `
+    <div class="dash-card-head">
+      <div><h3>${esc(title)}</h3><p class="dash-card-sub">${esc(sub)}</p></div>
+      <label class="dash-multi-toggle" title="On: select more than one before viewing the list. Off: one click jumps straight to the list.">
+        <input type="checkbox" data-multi-toggle="${esc(multiGroup)}" ${on ? 'checked' : ''}>
+        <span>Multi-select</span>
+      </label>
+    </div>`;
+}
+// A vertical list of thin horizontal bars, each row itself the click target (per the
+// dataviz skill: "the mark is the hit target"). By default a click is a direct view —
+// it selects exactly this row and jumps to the matching list. With this card's
+// Multi-select switch on, a click instead toggles the row in/out of the selection (a ✓
+// marks the ones currently selected) without navigating. `opts.fmt` formats the
+// trailing value (defaults to a plain count); `opts.filterKey` is the filter dimension;
+// `opts.multiGroup` is this card's key into dashMultiSelect.
+function dashBarChart(rows, opts) {
+  const fmt = opts.fmt || (v => String(v));
+  const max = Math.max(1, ...rows.map(r => r.count));
+  const sel = state.filters[opts.filterKey] || [];
+  const multiOn = opts.multiGroup ? !!dashMultiSelect[opts.multiGroup] : false;
+  const hint = multiOn ? 'Click to toggle — Multi-select is on, so more than one can be selected' : 'Click to view these contracts';
+  return `<div class="dbar-list">${rows.map(r => {
+    const isSel = sel.includes(r.val);
+    return `
+    <button type="button" class="dbar-row${isSel ? ' is-selected' : ''}" data-filter-key="${esc(opts.filterKey)}" data-filter-val="${esc(r.val)}" data-multi-group="${esc(opts.multiGroup || '')}" title="${hint}">
+      <span class="dbar-label">${isSel ? '✓ ' : ''}${esc(r.label)}</span>
+      <span class="dbar-track"><span class="dbar-fill dfill-${r.colorClass}" style="width:${Math.max(2, Math.round(r.count / max * 100))}%"></span></span>
+      <span class="dbar-value">${fmt(r.count)}</span>
+    </button>`;
+  }).join('')}</div>`;
+}
+// A two-segment stacked bar (never a 2-slice pie/donut — see the dataviz skill) for a
+// yes/no split, with a labeled legend underneath since segment width alone can be hard
+// to read at a glance for a lopsided split. Same direct-view-by-default / Multi-select-
+// opt-in behavior as dashBarChart, per segment.
+function dashStackedBar(segments, opts) {
+  // A zero-count segment is skipped in the bar itself — a min-width pill claiming
+  // space it didn't earn would misread as "some, but few" instead of "none". It still
+  // gets a (dimmed, unclickable) legend entry so the split is fully accounted for.
+  const sel = state.filters[opts.filterKey] || [];
+  const multiOn = opts.multiGroup ? !!dashMultiSelect[opts.multiGroup] : false;
+  const hint = multiOn ? 'Click to toggle — Multi-select is on, so more than one can be selected' : 'Click to view these contracts';
+  const bars = segments.filter(s => s.count > 0).map(s => {
+    const isSel = sel.includes(s.val);
+    return `
+    <button type="button" class="dstack-seg dseg-${s.colorClass}${isSel ? ' is-selected' : ''}" style="flex:${s.count} 0 0" data-filter-key="${esc(opts.filterKey)}" data-filter-val="${esc(s.val)}" data-multi-group="${esc(opts.multiGroup || '')}" title="${hint}">
+      <span class="dstack-label">${isSel ? '✓ ' : ''}${esc(s.label)}</span><span class="dstack-count">${s.count}</span>
+    </button>`;
+  }).join('');
+  const legend = segments.map(s => `<span class="dstack-legend-item${s.count === 0 ? ' dstack-legend-item--zero' : ''}"><span class="dot" style="background:var(--${s.colorClass})"></span>${esc(s.label)} — ${s.count}</span>`).join('');
+  return `<div class="dstack">${bars}</div><div class="dstack-legend">${legend}</div>`;
+}
+// Top 5 is a ranked list of specific contracts rather than a category breakdown — no
+// Multi-select switch here, a click always jumps straight to that one contract.
+function dashTop5(items) {
+  const top = items.filter(i => i.tcv != null && !isNaN(i.tcv)).sort((a, b) => (b.tcv || 0) - (a.tcv || 0)).slice(0, 5);
+  if (!top.length) return `<div class="dash-empty">No contract values recorded yet.</div>`;
+  const max = Math.max(1, ...top.map(i => i.tcv || 0));
+  return `<div class="dbar-list">${top.map(i => {
+    const cls = (PRIORITY_META[i.priority] || PRIORITY_META[4]).cls.replace('badge-', '');
+    const isSel = state.filters.search === i.vendor;
+    return `
+    <button type="button" class="dbar-row dbar-row--top5${isSel ? ' is-selected' : ''}" data-filter-key="search" data-filter-val="${esc(i.vendor)}" title="Click to view this contract">
+      <span class="dbar-label">${isSel ? '✓ ' : ''}${esc(i.vendor)}</span>
+      <span class="dbar-track"><span class="dbar-fill dfill-${cls}" style="width:${Math.max(2, Math.round((i.tcv || 0) / max * 100))}%"></span></span>
+      <span class="dbar-value">${fmtCurrency(i.tcv)}</span>
+    </button>`;
+  }).join('')}</div>`;
+}
+function renderDashboard() {
+  const type = state.view.type;
+  const items = dashboardBaseItems();
+  document.getElementById('dashTitle').textContent = viewLabel();
+  document.getElementById('dashSubtitle').textContent =
+    `${items.length} open contract${items.length === 1 ? '' : 's'} · click any chart to view it directly, or switch on Multi-select (top-right of a card) to combine a few first`;
+  renderDashboardKPIs(items);
+
+  const priorityCard = `
+    <div class="dash-card dash-card--half">
+      ${dashCardHead('Priority mix', 'Open contracts by urgency', 'priority')}
+      ${dashBarChart(priorityBreakdown(items), { filterKey: 'priority', multiGroup: 'priority' })}
+    </div>`;
+
+  const pendingCount = items.filter(i => (((i.pendingLegal || '').toLowerCase()) || 'no') === 'yes').length;
+  const notPendingCount = items.length - pendingCount;
+  const pendingCard = `
+    <div class="dash-card ${type === 'cfo' ? 'dash-card--third' : 'dash-card--half'}">
+      ${dashCardHead('Pending with legal', 'Open contracts currently with legal vs. not', 'pending')}
+      ${dashStackedBar([
+        { val: 'yes', label: 'Pending legal', count: pendingCount, colorClass: 'critical' },
+        { val: 'no', label: 'Not pending', count: notPendingCount, colorClass: 'good' },
+      ], { filterKey: 'pending', multiGroup: 'pending' })}
+    </div>`;
+
+  if (type === 'legal') {
+    document.getElementById('dashBody').innerHTML = priorityCard + pendingCard;
+    return;
+  }
+
+  const spendCard = `
+    <div class="dash-card dash-card--half">
+      ${dashCardHead('Spend by priority', 'Total yearly TCV of open contracts, by urgency', 'spend')}
+      ${dashBarChart(spendBreakdown(items), { filterKey: 'priority', multiGroup: 'spend', fmt: v => fmtCurrency(v) })}
+    </div>`;
+
+  const renewYes = items.filter(i => (i.renewal || '').toLowerCase() === 'yes').length;
+  const renewNo = items.length - renewYes;
+  const renewalCard = `
+    <div class="dash-card dash-card--third">
+      ${dashCardHead('Renewals', 'Open contracts flagged as a renewal', 'renewal')}
+      ${dashStackedBar([
+        { val: 'yes', label: 'Renewal', count: renewYes, colorClass: 'blue' },
+        { val: 'no', label: 'Not a renewal', count: renewNo, colorClass: 'muted' },
+      ], { filterKey: 'renewal', multiGroup: 'renewal' })}
+    </div>`;
+
+  const top5Card = `
+    <div class="dash-card dash-card--third">
+      <h3>Top 5 highest value</h3>
+      <p class="dash-card-sub">Open contracts by yearly TCV</p>
+      ${dashTop5(items)}
+    </div>`;
+
+  document.getElementById('dashBody').innerHTML = priorityCard + spendCard + pendingCard + renewalCard + top5Card;
 }
 
 // ============ Theme ============
 function setTheme(t) {
   state.theme = t;
   document.body.className = t === 'dark' ? 'theme-dark' : 'theme-light';
-  document.getElementById('themeToggle').textContent = t === 'dark' ? '☀️' : '🌙';
+  const icon = t === 'dark' ? '☀️' : '🌙';
+  document.getElementById('themeToggle').textContent = icon;
+  // The dashboard screen has its own small theme toggle (it doesn't share appMain's
+  // header) — keep the two in sync regardless of which one was clicked.
+  const dashToggle = document.getElementById('dashThemeToggle');
+  if (dashToggle) dashToggle.textContent = icon;
 }
 
 // ============ Wire up (runs once the shared password has been accepted) ============
@@ -8960,19 +9357,24 @@ async function boot() {
 
   document.getElementById('f-search').addEventListener('input', e => { state.filters.search = e.target.value; renderActive(); });
   wireFilterBar();
+  document.getElementById('kpiMultiToggle').addEventListener('change', e => { kpiMultiSelect = e.target.checked; });
   document.getElementById('kpis').addEventListener('click', e => {
     const tile = e.target.closest('.kpi-clickable');
     if (!tile) return;
     const kpi = tile.dataset.kpi;
-    if (kpi === 'dueToday') {
-      const cur = state.filters.priority;
-      state.filters.priority = (cur.length === 1 && cur[0] === '1') ? [] : ['1'];
-    } else if (kpi === 'dueThisWeek') {
-      const cur = state.filters.priority;
-      state.filters.priority = (cur.length === 1 && cur[0] === '2') ? [] : ['2'];
-    } else if (kpi === 'pendingLegal') {
-      const cur = state.filters.pending;
-      state.filters.pending = (cur.length === 1 && cur[0] === 'yes') ? [] : ['yes'];
+    const KPI_FILTER = { dueToday: ['priority', '1'], dueThisWeek: ['priority', '2'], pendingLegal: ['pending', 'yes'] };
+    const mapping = KPI_FILTER[kpi];
+    if (!mapping) return;
+    const [key, val] = mapping;
+    if (kpiMultiSelect) {
+      // Multi-select is on: each tile adds/removes its own value, so e.g. "Due today"
+      // and "Due this week" can both be lit up (and both narrowing the table) at once.
+      toggleFilterValue(key, val);
+    } else {
+      // Default: a direct, exclusive pick — clicking sets the filter to exactly this
+      // value, or clears it if that's already the only thing selected.
+      const cur = state.filters[key];
+      state.filters[key] = (cur.length === 1 && cur[0] === val) ? [] : [val];
     }
     renderActive();
   });
@@ -8988,7 +9390,9 @@ async function boot() {
   document.getElementById('focusViewBtn').addEventListener('click', openFocusView);
   document.getElementById('exitFocusBtn').addEventListener('click', closeFocusView);
   document.getElementById('focusBody').addEventListener('click', e => {
-    const card = e.target.closest('.focus-card');
+    // [data-id] matches both a lone .focus-card and a .fc-merged-item nested inside
+    // a merged same-vendor card — each sub-item stays independently clickable.
+    const card = e.target.closest('[data-id]');
     if (!card) return;
     const item = state.items.find(i => i.id === card.dataset.id);
     if (item) openModal(item);
@@ -9002,6 +9406,45 @@ async function boot() {
     pinBtn.classList.toggle('active', state.pinColumns);
   });
 
+
+  document.getElementById('dashThemeToggle').addEventListener('click', () => setTheme(state.theme === 'dark' ? 'light' : 'dark'));
+  document.getElementById('dashChangeViewBtn').addEventListener('click', backToLanding);
+  document.getElementById('dashViewListBtn').addEventListener('click', showTable);
+  // Each card's Multi-select switch (top-right corner) flips whether clicks on that
+  // one card's chart accumulate a selection or act as a direct view — see dashBody's
+  // click handler just below.
+  document.getElementById('dashBody').addEventListener('change', e => {
+    const cb = e.target.closest('input[data-multi-toggle]');
+    if (!cb) return;
+    dashMultiSelect[cb.dataset.multiToggle] = cb.checked;
+    renderDashboard();
+  });
+  // Default (Multi-select off): one click is a direct view — it selects exactly this
+  // value for this filter dimension and jumps straight to the matching list. With that
+  // card's Multi-select switch on, a click instead toggles the value in/out of the
+  // selection and stays on the dashboard, so several can be combined before viewing.
+  document.getElementById('dashBody').addEventListener('click', e => {
+    const el = e.target.closest('[data-filter-key]');
+    if (!el) return;
+    const key = el.dataset.filterKey, val = el.dataset.filterVal;
+    const group = el.dataset.multiGroup;
+    const multiOn = group ? !!dashMultiSelect[group] : false;
+    if (multiOn) {
+      if (key === 'search') state.filters.search = (state.filters.search === val) ? '' : val;
+      else toggleFilterValue(key, val);
+      renderDashboard();
+    } else {
+      if (key === 'search') state.filters.search = val;
+      else state.filters[key] = [val];
+      showTable();
+    }
+  });
+  // The KPI row above the charts is the dashboard's "direct view" shortcut — unlike
+  // the charts, clicking any tile here jumps straight to the full list with whatever
+  // is currently selected, instead of toggling further.
+  document.getElementById('dashKpis').addEventListener('click', e => {
+    if (e.target.closest('.kpi')) showTable();
+  });
 
   document.getElementById('fc-search').addEventListener('input', e => { state.closedFilters.search = e.target.value; renderClosed(); });
   document.getElementById('fc-source').addEventListener('change', e => { state.closedFilters.source = e.target.value; renderClosed(); });
