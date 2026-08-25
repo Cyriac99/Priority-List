@@ -9148,7 +9148,7 @@ function backToLanding() {
 // while it's on does clicking accumulate several values instead of replacing and
 // navigating. Purely local UI state — never persisted, always starts off.
 let kpiMultiSelect = false;
-let dashMultiSelect = { priority: false, spend: false, pending: false, renewal: false };
+let dashMultiSelect = { priority: false, spend: false, pending: false };
 
 function dashboardBaseItems() {
   // Every dashboard number is computed from OPEN contracts only, matching the
@@ -9209,7 +9209,12 @@ function dashBarChart(rows, opts) {
   const multiOn = opts.multiGroup ? !!dashMultiSelect[opts.multiGroup] : false;
   const hint = multiOn ? 'Click to toggle — Multi-select is on, so more than one can be selected' : 'Click to view these contracts';
   return `<div class="dbar-list">${rows.map(r => {
-    const isSel = sel.includes(r.val);
+    // The ✓/highlight only ever appears in Multi-select mode — it marks what you've
+    // built up so far. In the default single-click mode it stays off, even though the
+    // view's own starting filter (e.g. CFO's priority 2/3) technically overlaps one of
+    // these values — that overlap is what the KPI row above already reports; repeating
+    // it here as a "selected" ring would look like an unprompted pick you never made.
+    const isSel = multiOn && sel.includes(r.val);
     return `
     <button type="button" class="dbar-row${isSel ? ' is-selected' : ''}" data-filter-key="${esc(opts.filterKey)}" data-filter-val="${esc(r.val)}" data-multi-group="${esc(opts.multiGroup || '')}" title="${hint}">
       <span class="dbar-label">${isSel ? '✓ ' : ''}${esc(r.label)}</span>
@@ -9230,7 +9235,8 @@ function dashStackedBar(segments, opts) {
   const multiOn = opts.multiGroup ? !!dashMultiSelect[opts.multiGroup] : false;
   const hint = multiOn ? 'Click to toggle — Multi-select is on, so more than one can be selected' : 'Click to view these contracts';
   const bars = segments.filter(s => s.count > 0).map(s => {
-    const isSel = sel.includes(s.val);
+    // Same rule as dashBarChart: only highlight in Multi-select mode.
+    const isSel = multiOn && sel.includes(s.val);
     return `
     <button type="button" class="dstack-seg dseg-${s.colorClass}${isSel ? ' is-selected' : ''}" style="flex:${s.count} 0 0" data-filter-key="${esc(opts.filterKey)}" data-filter-val="${esc(s.val)}" data-multi-group="${esc(opts.multiGroup || '')}" title="${hint}">
       <span class="dstack-label">${isSel ? '✓ ' : ''}${esc(s.label)}</span><span class="dstack-count">${s.count}</span>
@@ -9261,7 +9267,7 @@ function renderDashboard() {
   const items = dashboardBaseItems();
   document.getElementById('dashTitle').textContent = viewLabel();
   document.getElementById('dashSubtitle').textContent =
-    `${items.length} open contract${items.length === 1 ? '' : 's'} · click any chart to view it directly, or switch on Multi-select (top-right of a card) to combine a few first, then use that card's "View this selection"`;
+    `${items.length} open contract${items.length === 1 ? '' : 's'} · click a chart to view it, or turn on Multi-select to combine values first`;
   renderDashboardKPIs(items);
 
   const priorityCard = `
@@ -9297,14 +9303,16 @@ function renderDashboard() {
 
   const renewYes = items.filter(i => (i.renewal || '').toLowerCase() === 'yes').length;
   const renewNo = items.length - renewYes;
+  // No Multi-select here — it's a plain yes/no split, so selecting both would be the
+  // same as selecting neither. A click always jumps straight to the matching list.
   const renewalCard = `
     <div class="dash-card dash-card--third">
-      ${dashCardHead('Renewals', 'Open contracts flagged as a renewal', 'renewal')}
+      <h3>Renewals</h3>
+      <p class="dash-card-sub">Open contracts flagged as a renewal</p>
       ${dashStackedBar([
         { val: 'yes', label: 'Renewal', count: renewYes, colorClass: 'blue' },
         { val: 'no', label: 'Not a renewal', count: renewNo, colorClass: 'muted' },
-      ], { filterKey: 'renewal', multiGroup: 'renewal' })}
-      ${dashViewButton('renewal')}
+      ], { filterKey: 'renewal' })}
     </div>`;
 
   const top5Card = `
