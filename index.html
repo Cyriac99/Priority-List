@@ -298,6 +298,14 @@
   }
   .dash-multi-toggle input { accent-color: var(--blue); cursor: pointer; width: 14px; height: 14px; margin: 0; }
   .dash-multi-toggle:has(input:checked) { color: var(--blue); }
+  /* Appears only while a card's Multi-select switch is on — the explicit "go view
+     what I've selected" action, since clicks on that card no longer navigate on their own. */
+  .dash-view-btn {
+    display: block; margin: 14px 0 0 auto; background: var(--blue); color: #fff; border: none;
+    border-radius: 8px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: filter .15s ease;
+  }
+  .dash-view-btn:hover { filter: brightness(1.1); }
 
   /* ---------- Tabs ---------- */
   .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--gridline); margin-bottom: 14px; flex-wrap: wrap; }
@@ -9180,6 +9188,13 @@ function dashCardHead(title, sub, multiGroup) {
       </label>
     </div>`;
 }
+// While a card's Multi-select switch is on, clicking its chart no longer navigates —
+// so this is the card's own explicit way to act on whatever's been selected so far,
+// right where the selection was just made.
+function dashViewButton(multiGroup) {
+  if (!dashMultiSelect[multiGroup]) return '';
+  return `<button type="button" class="dash-view-btn" data-view-group="${esc(multiGroup)}">View this selection →</button>`;
+}
 // A vertical list of thin horizontal bars, each row itself the click target (per the
 // dataviz skill: "the mark is the hit target"). By default a click is a direct view —
 // it selects exactly this row and jumps to the matching list. With this card's
@@ -9246,13 +9261,14 @@ function renderDashboard() {
   const items = dashboardBaseItems();
   document.getElementById('dashTitle').textContent = viewLabel();
   document.getElementById('dashSubtitle').textContent =
-    `${items.length} open contract${items.length === 1 ? '' : 's'} · click any chart to view it directly, or switch on Multi-select (top-right of a card) to combine a few first`;
+    `${items.length} open contract${items.length === 1 ? '' : 's'} · click any chart to view it directly, or switch on Multi-select (top-right of a card) to combine a few first, then use that card's "View this selection"`;
   renderDashboardKPIs(items);
 
   const priorityCard = `
     <div class="dash-card dash-card--half">
       ${dashCardHead('Priority mix', 'Open contracts by urgency', 'priority')}
       ${dashBarChart(priorityBreakdown(items), { filterKey: 'priority', multiGroup: 'priority' })}
+      ${dashViewButton('priority')}
     </div>`;
 
   const pendingCount = items.filter(i => (((i.pendingLegal || '').toLowerCase()) || 'no') === 'yes').length;
@@ -9264,6 +9280,7 @@ function renderDashboard() {
         { val: 'yes', label: 'Pending legal', count: pendingCount, colorClass: 'critical' },
         { val: 'no', label: 'Not pending', count: notPendingCount, colorClass: 'good' },
       ], { filterKey: 'pending', multiGroup: 'pending' })}
+      ${dashViewButton('pending')}
     </div>`;
 
   if (type === 'legal') {
@@ -9275,6 +9292,7 @@ function renderDashboard() {
     <div class="dash-card dash-card--half">
       ${dashCardHead('Spend by priority', 'Total yearly TCV of open contracts, by urgency', 'spend')}
       ${dashBarChart(spendBreakdown(items), { filterKey: 'priority', multiGroup: 'spend', fmt: v => fmtCurrency(v) })}
+      ${dashViewButton('spend')}
     </div>`;
 
   const renewYes = items.filter(i => (i.renewal || '').toLowerCase() === 'yes').length;
@@ -9286,6 +9304,7 @@ function renderDashboard() {
         { val: 'yes', label: 'Renewal', count: renewYes, colorClass: 'blue' },
         { val: 'no', label: 'Not a renewal', count: renewNo, colorClass: 'muted' },
       ], { filterKey: 'renewal', multiGroup: 'renewal' })}
+      ${dashViewButton('renewal')}
     </div>`;
 
   const top5Card = `
@@ -9424,6 +9443,10 @@ async function boot() {
   // card's Multi-select switch on, a click instead toggles the value in/out of the
   // selection and stays on the dashboard, so several can be combined before viewing.
   document.getElementById('dashBody').addEventListener('click', e => {
+    // The card's own "View this selection" button — only present while that card's
+    // Multi-select switch is on, since that's the only mode where clicks don't
+    // already jump straight to the list on their own.
+    if (e.target.closest('.dash-view-btn')) { showTable(); return; }
     const el = e.target.closest('[data-filter-key]');
     if (!el) return;
     const key = el.dataset.filterKey, val = el.dataset.filterVal;
