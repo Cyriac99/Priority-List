@@ -269,6 +269,12 @@
   }
   @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 640px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  /* Dashboard KPI row has one fewer tile than the table's (no "Contracts shown" —
+     redundant next to the subtitle count and the charts below), so it gets its own
+     column count rather than inheriting the table's repeat(5, 1fr). */
+  #dashKpis { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 1100px) { #dashKpis { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { #dashKpis { grid-template-columns: repeat(2, 1fr); } }
   .kpi {
     background: var(--surface-1); border: 1px solid var(--border);
     border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow);
@@ -482,10 +488,23 @@
     width: 100%; border: 1px solid var(--border-strong); background: var(--surface-2);
     color: var(--text-primary); border-radius: 7px; padding: 8px 10px; font-size: 13px; outline: none;
   }
-  .field input:disabled, .field select:disabled { opacity: .6; cursor: not-allowed; }
+  .field input:disabled, .field select:disabled, .field textarea:disabled { opacity: .6; cursor: not-allowed; }
   .field textarea { resize: vertical; min-height: 46px; }
-  .field .req { color: var(--critical); }
+  /* A single CSS-driven "*" for every required field, Vendor/Description included —
+     it tracks the real `required` state (which toggles per view for most fields; see
+     applyFieldRequirements) instead of being a second, easily-stale copy of it. */
+  .field label:has(+ input:required)::after,
+  .field label:has(+ select:required)::after,
+  .field label:has(+ textarea:required)::after {
+    content: ' *'; color: var(--critical);
+  }
   .field .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  /* Read-only display inside the modal — e.g. Legal Action status, which is only ever
+     set via the dedicated "Mark completed" button, never typed into this form. */
+  .field .static-value {
+    border: 1px solid var(--border); background: var(--page-plane); border-radius: 7px;
+    padding: 8px 10px; font-size: 13px; color: var(--text-secondary);
+  }
   .modal-foot {
     display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px;
     border-top: 1px solid var(--gridline); position: sticky; bottom: 0; background: var(--surface-1);
@@ -843,7 +862,7 @@
     </div>
     <form id="modalForm">
       <div class="modal-body">
-        <div class="field"><label>Vendor name <span class="req">*</span></label><input id="m-vendor" required></div>
+        <div class="field"><label>Vendor name</label><input id="m-vendor" required></div>
         <div class="field"><label>Priority</label>
           <select id="m-priority">
             <option value="1">1 — To be signed TODAY</option>
@@ -855,7 +874,7 @@
         <div class="field"><label>Renewal contract?</label>
           <select id="m-renewal"><option value="">—</option><option>Yes</option><option>No</option></select>
         </div>
-        <div class="field full"><label>Contract description <span class="req">*</span></label><textarea id="m-description" required></textarea></div>
+        <div class="field full"><label>Contract description</label><textarea id="m-description" required></textarea></div>
         <div class="field"><label>Yearly TCV (AED)</label><input id="m-tcv" type="number" step="any" placeholder="e.g. 250000"></div>
         <div class="field"><label>Expiry date</label><input id="m-expiry" type="date"></div>
         <div class="field"><label>Status</label>
@@ -880,7 +899,16 @@
           <input id="m-dateSentToLegal" type="date" disabled>
           <div class="hint">Auto-filled with today's date when set to Yes — edit it if it was actually sent on a different day.</div>
         </div>
-        <div class="field full"><label>Legal comments</label><textarea id="m-legalComments"></textarea></div>
+        <div class="field" id="m-legalActionField" hidden>
+          <label>Legal action</label>
+          <div class="static-value" id="m-legalActionStatus"></div>
+          <div class="hint">Set only via the "Mark completed" action on the contract — not editable here.</div>
+        </div>
+        <div class="field full">
+          <label>Legal comments</label>
+          <textarea id="m-legalComments"></textarea>
+          <div class="hint" id="m-legalComments-hint" hidden>Set by the Legal team — read-only from Procurement view.</div>
+        </div>
         <div class="field full"><label>Comments</label><textarea id="m-comments"></textarea></div>
       </div>
       <div class="modal-foot">
@@ -7834,7 +7862,7 @@ const PROCUREMENT_PEOPLE = ['Abhijith', 'Burhan', 'Cyriac', 'Evita', 'Evita/Burh
 // ============ Supabase config ============
 // Fill these in with your own project's values after running seed.sql (see SETUP.md).
 // Leaving them as-is keeps the tool fully local (each browser has its own copy, same as before).
-const SUPABASE_URL = 'https://amtqlhqmcpnrfhvrhbqj.supabase.co';
+const SUPABASE_URL = 'amtqlhqmcpnrfhvrhbqj.supabase.co';';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdHFsaHFtY3BucmZodnJoYnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDk2NjgsImV4cCI6MjA5NDkyNTY2OH0.lQH5Syx2D1Xk-n1pHpL_V4QgRv1Y_qKl2XyF3CQ681o';
 let supa = null;
 let realtimeChannel = null;
@@ -8037,13 +8065,20 @@ function renewalCell(v) {
   if (lower === 'no') return '<span class="muted-cell">No</span>';
   return '<span class="muted-cell">—</span>';
 }
-function legalActionCell(item) {
+// `interactive` is true only in Legal's own view — that's the only place the "Mark
+// completed" button appears. Everywhere else that shows this cell (Procurement, and
+// the read-only Legal Action field in the Add/Edit modal) gets the same information —
+// completed (with its date) or still pending — just without a way to trigger it.
+function legalActionCell(item, interactive) {
   const pending = (item.pendingLegal || '').toLowerCase() === 'yes';
   if (!pending) return '<span class="muted-cell">—</span>';
   if ((item.legalCompleted || '').toLowerCase() === 'yes') {
     return `<span class="badge badge-good">✓ Completed${item.legalCompletedDate ? ' · ' + fmtDate(item.legalCompletedDate) : ''}</span>`;
   }
-  return `<button class="legal-complete-btn" data-act="legalcomplete" data-id="${item.id}" title="Mark legal's action on this contract as completed">✓ Mark completed</button>`;
+  if (interactive) {
+    return `<button class="legal-complete-btn" data-act="legalcomplete" data-id="${item.id}" title="Mark legal's action on this contract as completed">✓ Mark completed</button>`;
+  }
+  return '<span class="badge badge-warning">⏳ Pending</span>';
 }
 function clampWrap(text) {
   if (!text) return '<span class="muted-cell">—</span>';
@@ -8301,10 +8336,16 @@ const ACTIVE_COLS = [
   { key: '_actions', label: '' },
 ];
 
-// "Legal Action" (the Mark Completed workflow) only makes sense from Legal's own view —
-// CFO/Procurement don't need to see or trigger it, so the whole column is hidden elsewhere.
+function isProcurementView() {
+  const t = state.view && state.view.type;
+  return t === 'procurement-all' || t === 'procurement-individual';
+}
+// "Legal Action" (whether Legal has marked their part done, and when) is relevant to
+// Legal's own view — where the "Mark completed" button lives — and to Procurement, who
+// needs to see it but never triggers it (see legalActionCell's `interactive` flag).
+// CFO doesn't need this column, so it's still hidden there.
 function activeColsForView() {
-  const showLegalAction = !!(state.view && state.view.type === 'legal');
+  const showLegalAction = !!(state.view && (state.view.type === 'legal' || isProcurementView()));
   return showLegalAction ? ACTIVE_COLS : ACTIVE_COLS.filter(c => c.key !== 'legalCompleted');
 }
 
@@ -8331,7 +8372,8 @@ function renderActive() {
   document.getElementById('activeFilterCount').textContent = `${filtered.length} of ${all.length} shown`;
   document.getElementById('cntActive').textContent = all.length;
   renderActiveHead();
-  const showLegalAction = !!(state.view && state.view.type === 'legal');
+  const legalView = !!(state.view && state.view.type === 'legal');
+  const showLegalAction = legalView || isProcurementView();
   const body = document.getElementById('activeBody');
   if (!filtered.length) {
     body.innerHTML = `<tr><td colspan="${activeColsForView().length}"><div class="empty-state">No contracts match these filters.</div></td></tr>`;
@@ -8351,7 +8393,7 @@ function renderActive() {
         <td>${esc(item.legal) || '<span class="muted-cell">—</span>'}</td>
         <td class="legal-comments">${clampWrap(item.legalComments)}</td>
         <td>${pendingCell(item.pendingLegal)}</td>
-        ${showLegalAction ? `<td>${legalActionCell(item)}</td>` : ''}
+        ${showLegalAction ? `<td>${legalActionCell(item, legalView)}</td>` : ''}
         <td>${dateSentCell(item)}</td>
         <td class="comments">${clampWrap(item.comments)}</td>
         <td class="actions-cell pin-right">
@@ -8590,13 +8632,15 @@ function renderKPIs(activeItems, filteredItems) {
     `${closedCount} contracts signed & closed to date (this cycle + historical archive). Once a contract is signed, procurement marks it closed and it moves there. TCV totals only include line items where a numeric value was entered in the source sheet.` +
     (filtersActive ? ` Numbers above reflect the ${filteredItems.length} of ${activeItems.length} contracts currently shown by your view/filters.` : '');
 }
-// The dashboard's own KPI row, sitting above the charts. Same five tiles as the table,
-// but every tile here navigates straight to the full list on click (a fast lane
-// alongside "View full list") rather than toggling a filter in place — the charts
-// below are where selections are built up.
+// The dashboard's own KPI row, sitting above the charts. Same tiles as the table minus
+// "Contracts shown" — redundant here since the subtitle right above already gives the
+// open-contract count, and every chart card shows its own breakdown. Every tile here
+// navigates straight to the full list on click (a fast lane alongside "View full list")
+// rather than toggling a filter in place — the charts below are where selections are
+// built up.
 function renderDashboardKPIs(baseItems) {
   const filtered = baseItems.filter(matchesActiveFilters);
-  const tiles = kpiTileDefs(baseItems, filtered);
+  const tiles = kpiTileDefs(baseItems, filtered).filter(t => t.key !== 'shown');
   document.getElementById('dashKpis').innerHTML = tiles.map(t => `
     <div class="kpi kpi--dash${t.active ? ' active' : ''}" data-kpi="${t.key}" title="Click to view this in the full list">
       <span class="bar" style="background:${t.color}"></span>
@@ -8712,7 +8756,8 @@ function itemDetailHTML(item) {
   if ((item.renewal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-blue">Renewal</span>');
   if ((item.pendingLegal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-critical">Pending Legal</span>');
 
-  const showLegalAction = !!(state.view && state.view.type === 'legal');
+  const legalView = !!(state.view && state.view.type === 'legal');
+  const showLegalAction = legalView || isProcurementView();
 
   const field = (lbl, val) => `<div class="detail-field"><div class="lbl">${lbl}</div><div class="val">${val || '<span class="muted-cell">—</span>'}</div></div>`;
 
@@ -8738,7 +8783,7 @@ function itemDetailHTML(item) {
       ${field('Legal', esc(item.legal))}
       ${field('Pending Legal', pendingCell(item.pendingLegal))}
       ${field('Date Sent to Legal', dateSentCell(item))}
-      ${showLegalAction ? field('Legal Action', legalActionCell(item)) : ''}
+      ${showLegalAction ? field('Legal Action', legalActionCell(item, legalView)) : ''}
       ${field('PR on Kissflow', esc(item.kissflow))}
     </div>
     ${sections.join('')}
@@ -8918,8 +8963,22 @@ function openModal(item) {
   document.getElementById('m-pendingLegal').value = item ? item.pendingLegal : '';
   document.getElementById('m-dateSentToLegal').value = item && item.dateSentToLegal ? item.dateSentToLegal : '';
   updateDateSentEnabled();
-  document.getElementById('m-legalComments').value = item ? item.legalComments : '';
+
+  // Legal Comments is Legal's own input — Procurement can see it, but not edit it here.
+  // A read-only "Legal action" status line (completed/pending) sits alongside it so
+  // Procurement always has that context without needing the table or Item Detail view.
+  const legalCommentsField = document.getElementById('m-legalComments');
+  const lockLegalComments = isProcurementView();
+  legalCommentsField.disabled = lockLegalComments;
+  document.getElementById('m-legalComments-hint').hidden = !lockLegalComments;
+  legalCommentsField.value = item ? item.legalComments : '';
+
+  const legalActionField = document.getElementById('m-legalActionField');
+  legalActionField.hidden = !item;
+  if (item) document.getElementById('m-legalActionStatus').innerHTML = legalActionCell(item, false);
+
   document.getElementById('m-comments').value = item ? item.comments : '';
+  applyFieldRequirements();
   document.getElementById('modalOverlay').hidden = false;
 }
 function updateDateSentEnabled() {
@@ -8927,6 +8986,31 @@ function updateDateSentEnabled() {
   const dateField = document.getElementById('m-dateSentToLegal');
   dateField.disabled = pending !== 'Yes';
   if (pending !== 'Yes') dateField.value = '';
+}
+// Procurement (and every individual procurement view) must fill in every field here
+// before saving, with these exceptions: Yearly TCV stays optional (a value isn't always
+// known up front); Expiry is only required once Renewal is set to Yes; Date Sent to
+// Legal is only required once Pending Legal is set to Yes (it's disabled, and so
+// unreachable, otherwise). Legal Comments is excluded too — Procurement can't edit that
+// field at all (see openModal), so it can't be asked to fill it in. Every other view
+// keeps the original, looser rules (just Vendor + Description), unchanged.
+const PROCUREMENT_MANDATORY_IDS = [
+  'm-priority', 'm-renewal', 'm-status', 'm-kissflow', 'm-procurement',
+  'm-exco', 'm-responsible', 'm-legal', 'm-pendingLegal', 'm-comments',
+];
+function applyFieldRequirements() {
+  const mandatory = isProcurementView();
+  PROCUREMENT_MANDATORY_IDS.forEach(id => { document.getElementById(id).required = mandatory; });
+  updateExpiryRequired();
+  updateDateSentRequired();
+}
+function updateExpiryRequired() {
+  const isRenewal = document.getElementById('m-renewal').value === 'Yes';
+  document.getElementById('m-expiry').required = isProcurementView() && isRenewal;
+}
+function updateDateSentRequired() {
+  const isPending = document.getElementById('m-pendingLegal').value === 'Yes';
+  document.getElementById('m-dateSentToLegal').required = isProcurementView() && isPending;
 }
 function closeModal() { document.getElementById('modalOverlay').hidden = true; state.editingId = null; }
 
@@ -9369,9 +9453,11 @@ async function boot() {
   });
   document.getElementById('m-pendingLegal').addEventListener('change', () => {
     updateDateSentEnabled();
+    updateDateSentRequired();
     const dateField = document.getElementById('m-dateSentToLegal');
     if (document.getElementById('m-pendingLegal').value === 'Yes' && !dateField.value) dateField.value = todayISO();
   });
+  document.getElementById('m-renewal').addEventListener('change', updateExpiryRequired);
 
   document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
   document.getElementById('backupBtn').addEventListener('click', exportBackup);
