@@ -269,12 +269,6 @@
   }
   @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 640px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
-  /* Dashboard KPI row has one fewer tile than the table's (no "Contracts shown" —
-     redundant next to the subtitle count and the charts below), so it gets its own
-     column count rather than inheriting the table's repeat(5, 1fr). */
-  #dashKpis { grid-template-columns: repeat(4, 1fr); }
-  @media (max-width: 1100px) { #dashKpis { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 640px) { #dashKpis { grid-template-columns: repeat(2, 1fr); } }
   .kpi {
     background: var(--surface-1); border: 1px solid var(--border);
     border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow);
@@ -326,7 +320,6 @@
     font-size: 11px; padding: 1px 7px; font-weight: 700;
   }
   .tab-btn.active .count { background: var(--blue); color: #fff; }
-  .tab-btn[hidden] { display: none; }
 
   /* ---------- Filter bar ---------- */
   .filterbar {
@@ -489,23 +482,10 @@
     width: 100%; border: 1px solid var(--border-strong); background: var(--surface-2);
     color: var(--text-primary); border-radius: 7px; padding: 8px 10px; font-size: 13px; outline: none;
   }
-  .field input:disabled, .field select:disabled, .field textarea:disabled { opacity: .6; cursor: not-allowed; }
+  .field input:disabled, .field select:disabled { opacity: .6; cursor: not-allowed; }
   .field textarea { resize: vertical; min-height: 46px; }
-  /* A single CSS-driven "*" for every required field, Vendor/Description included —
-     it tracks the real `required` state (which toggles per view for most fields; see
-     applyFieldRequirements) instead of being a second, easily-stale copy of it. */
-  .field label:has(+ input:required)::after,
-  .field label:has(+ select:required)::after,
-  .field label:has(+ textarea:required)::after {
-    content: ' *'; color: var(--critical);
-  }
+  .field .req { color: var(--critical); }
   .field .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
-  /* Read-only display inside the modal — e.g. Legal Action status, which is only ever
-     set via the dedicated "Mark completed" button, never typed into this form. */
-  .field .static-value {
-    border: 1px solid var(--border); background: var(--page-plane); border-radius: 7px;
-    padding: 8px 10px; font-size: 13px; color: var(--text-secondary);
-  }
   .modal-foot {
     display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px;
     border-top: 1px solid var(--gridline); position: sticky; bottom: 0; background: var(--surface-1);
@@ -691,130 +671,6 @@
   .fc-merged-item .fc-hint { opacity: .55; }
   .fc-merged-item:hover .fc-hint { opacity: 1; }
   .fc-merged-divider { border-top: 1px dashed var(--gridline); margin: 2px 0 12px; }
-
-  /* ================= Project Tracker (Procurement-only tab) ================= */
-  .proj-toolbar {
-    display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px;
-    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px;
-  }
-  .proj-toolbar input[type=search] {
-    flex: 1 1 200px; min-width: 160px; border: 1px solid var(--border-strong);
-    background: var(--surface-2); color: var(--text-primary); border-radius: 7px;
-    padding: 7px 10px; font-size: 13px; outline: none;
-  }
-  .proj-toolbar select {
-    border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-primary);
-    border-radius: 7px; padding: 7px 8px; font-size: 12.5px; outline: none;
-  }
-  .proj-viewswitch { display: flex; gap: 2px; background: var(--page-plane); border-radius: 8px; padding: 3px; }
-  .proj-viewswitch button {
-    border: none; background: transparent; color: var(--text-secondary); font-weight: 700;
-    font-size: 12.5px; padding: 6px 12px; border-radius: 6px; font-family: inherit;
-  }
-  .proj-viewswitch button.active { background: var(--surface-2); color: var(--text-primary); box-shadow: var(--shadow); }
-  .proj-toolbar .fcount { font-size: 12px; color: var(--muted); margin-left: auto; white-space: nowrap; }
-
-  /* ---- Kanban board ---- */
-  .kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
-  .kanban-col {
-    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px; min-height: 140px; transition: background .12s ease, box-shadow .12s ease;
-  }
-  .kanban-col.drag-over { background: var(--blue-bg); box-shadow: 0 0 0 2px var(--blue) inset; }
-  .kanban-col-head {
-    display: flex; align-items: center; gap: 8px; padding: 4px 4px 10px; font-size: 13px; font-weight: 700;
-  }
-  .kanban-col-head .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-  .kanban-col-head .count {
-    margin-left: auto; background: var(--gridline); color: var(--text-secondary); border-radius: 999px;
-    font-size: 11px; padding: 1px 8px; font-weight: 700;
-  }
-  .kanban-cards { display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
-  .kanban-empty { text-align: center; color: var(--muted); font-size: 12px; padding: 18px 6px; }
-  .task-card {
-    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 10px 11px; box-shadow: var(--shadow); cursor: grab; transition: box-shadow .12s ease, transform .08s ease;
-  }
-  .task-card:hover { box-shadow: var(--shadow-lg); }
-  .task-card:active { cursor: grabbing; }
-  .task-card.dragging { opacity: .4; }
-  .task-card.done .task-title { text-decoration: line-through; color: var(--muted); }
-  .task-title { font-size: 13px; font-weight: 700; margin: 0 0 6px; line-height: 1.35; }
-  .task-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .task-chip {
-    display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
-    padding: 2px 8px; border-radius: 999px; white-space: nowrap; border: none; font-family: inherit; cursor: default;
-  }
-  .task-chip.assignee { background: var(--violet-bg); color: var(--violet); }
-  .task-chip.due { background: var(--gridline); color: var(--text-secondary); }
-  .task-chip.due.overdue { background: var(--critical-bg); color: var(--critical); }
-  .task-chip.due.soon { background: var(--warning-bg); color: #8a6300; }
-  .task-chip.recurring { background: var(--blue-bg); color: var(--blue); }
-  .task-chip.link { background: var(--good-bg); color: var(--success-text); cursor: pointer; }
-  .task-chip.link:hover { filter: brightness(0.95); text-decoration: underline; }
-  .task-card-actions { display: flex; gap: 6px; margin-top: 8px; }
-  .task-card-actions button {
-    border: 1px solid var(--border-strong); background: var(--surface-1); color: var(--text-secondary);
-    border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 700; font-family: inherit;
-  }
-  .task-card-actions button:hover { background: var(--page-plane); color: var(--text-primary); }
-  .task-card-actions button.primary { border-color: var(--good); color: var(--success-text); background: var(--good-bg); }
-  .task-card-actions button.primary:hover { background: var(--good); color: #fff; }
-
-  /* ---- Calendar ---- */
-  .cal-wrap {
-    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
-    padding: 14px; box-shadow: var(--shadow);
-  }
-  .cal-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .cal-nav h3 { margin: 0; font-size: 15px; flex: 1; }
-  .cal-nav button {
-    border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-primary);
-    border-radius: 7px; padding: 6px 11px; font-size: 12.5px; font-weight: 700; font-family: inherit;
-  }
-  .cal-nav button:hover { background: var(--page-plane); }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-  .cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 4px 0; }
-  .cal-day {
-    min-height: 88px; border: 1px solid var(--gridline); border-radius: 9px; padding: 6px;
-    background: var(--surface-2); cursor: pointer; transition: background .12s ease, box-shadow .12s ease;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .cal-day:hover { box-shadow: var(--shadow-lg); }
-  .cal-day.outside { background: transparent; border-color: transparent; cursor: default; }
-  .cal-day.today { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; }
-  .cal-day .cal-daynum { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
-  .cal-day.today .cal-daynum { color: var(--blue); }
-  .cal-chip {
-    font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 6px; white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis; background: var(--blue-bg); color: var(--blue); text-align: left;
-    border: none; font-family: inherit; cursor: pointer; width: 100%;
-  }
-  .cal-chip.col-doing { background: var(--warning-bg); color: #8a6300; }
-  .cal-chip.col-done { background: var(--good-bg); color: var(--success-text); text-decoration: line-through; }
-  .cal-chip.overdue { background: var(--critical-bg); color: var(--critical); }
-  .cal-more { font-size: 10.5px; color: var(--muted); font-weight: 700; padding: 0 2px; }
-  .cal-unscheduled { margin-top: 16px; }
-  .cal-unscheduled h4 { font-size: 12.5px; color: var(--text-secondary); margin: 0 0 8px; }
-  .cal-unsched-list { display: flex; flex-wrap: wrap; gap: 8px; }
-
-  /* ---- Day detail popover ---- */
-  #dayDetailOverlay { z-index: 68; }
-  .day-detail-card {
-    background: var(--surface-1); color: var(--text-primary); border-radius: 14px;
-    width: 100%; max-width: 420px; max-height: 80vh; overflow: auto;
-    box-shadow: var(--shadow-lg); border: 1px solid var(--border);
-  }
-  .day-detail-head {
-    display: flex; align-items: center; justify-content: space-between; padding: 14px 18px;
-    border-bottom: 1px solid var(--gridline);
-  }
-  .day-detail-head h3 { margin: 0; font-size: 14.5px; }
-  .day-detail-body { padding: 12px 18px 18px; display: flex; flex-direction: column; gap: 8px; }
-
-  .proj-empty { text-align: center; color: var(--muted); padding: 40px 20px; }
-  @media (max-width: 900px) { .kanban-board { grid-template-columns: 1fr; } }
-  @media (max-width: 700px) { .cal-day { min-height: 60px; } .cal-dow { font-size: 9.5px; } }
 </style>
 </head>
 <body class="theme-light">
@@ -922,7 +778,6 @@
     <button class="tab-btn" data-tab="closed">Signed &amp; Closed <span class="count" id="cntClosed">0</span></button>
     <button class="tab-btn" data-tab="log">Change Log <span class="count" id="cntLog">0</span></button>
     <button class="tab-btn" data-tab="settings">⚙ Manage Lists</button>
-    <button class="tab-btn" data-tab="projects" id="projectsTabBtn" hidden>📋 Project Tracker <span class="count" id="cntProjects">0</span></button>
   </nav>
 
   <section id="tab-active">
@@ -977,39 +832,6 @@
     <div class="settings-grid" id="settingsGrid"></div>
   </section>
 
-  <section id="tab-projects" hidden>
-    <div class="helpbar" style="margin-bottom:14px;">
-      <span>ℹ️ Your own procurement task board — to-dos, follow-ups, and recurring chores, separate from the contract list above. Only Procurement can see this tab. Link a task to a contract to jump straight to it.</span>
-    </div>
-    <div class="proj-toolbar">
-      <div class="proj-viewswitch" id="projViewSwitch">
-        <button type="button" data-projview="board" class="active">🗂 Board</button>
-        <button type="button" data-projview="calendar">📅 Calendar</button>
-      </div>
-      <input type="search" id="fp-search" placeholder="Search tasks...">
-      <select id="fp-assignee"><option value="">All procurement</option></select>
-      <span class="fcount" id="projFilterCount"></span>
-      <span class="conn-badge" id="projConnBadge" style="margin-left:6px;"></span>
-      <button class="btn primary small" id="addTaskBtn">+ Add Task</button>
-    </div>
-
-    <div id="projBoardWrap">
-      <div class="kanban-board" id="kanbanBoard"></div>
-    </div>
-    <div id="projCalendarWrap" hidden>
-      <div class="cal-wrap">
-        <div class="cal-nav">
-          <button type="button" id="calPrevBtn">‹ Prev</button>
-          <h3 id="calTitle"></h3>
-          <button type="button" id="calTodayBtn">Today</button>
-          <button type="button" id="calNextBtn">Next ›</button>
-        </div>
-        <div class="cal-grid" id="calGrid"></div>
-      </div>
-      <div class="cal-unscheduled" id="calUnscheduled"></div>
-    </div>
-  </section>
-
   <p class="footnote" id="footnote"></p>
 </div>
 
@@ -1021,7 +843,7 @@
     </div>
     <form id="modalForm">
       <div class="modal-body">
-        <div class="field"><label>Vendor name</label><input id="m-vendor" required></div>
+        <div class="field"><label>Vendor name <span class="req">*</span></label><input id="m-vendor" required></div>
         <div class="field"><label>Priority</label>
           <select id="m-priority">
             <option value="1">1 — To be signed TODAY</option>
@@ -1033,7 +855,7 @@
         <div class="field"><label>Renewal contract?</label>
           <select id="m-renewal"><option value="">—</option><option>Yes</option><option>No</option></select>
         </div>
-        <div class="field full"><label>Contract description</label><textarea id="m-description" required></textarea></div>
+        <div class="field full"><label>Contract description <span class="req">*</span></label><textarea id="m-description" required></textarea></div>
         <div class="field"><label>Yearly TCV (AED)</label><input id="m-tcv" type="number" step="any" placeholder="e.g. 250000"></div>
         <div class="field"><label>Expiry date</label><input id="m-expiry" type="date"></div>
         <div class="field"><label>Status</label>
@@ -1058,16 +880,7 @@
           <input id="m-dateSentToLegal" type="date" disabled>
           <div class="hint">Auto-filled with today's date when set to Yes — edit it if it was actually sent on a different day.</div>
         </div>
-        <div class="field" id="m-legalActionField" hidden>
-          <label>Legal action</label>
-          <div class="static-value" id="m-legalActionStatus"></div>
-          <div class="hint">Set only via the "Mark completed" action on the contract — not editable here.</div>
-        </div>
-        <div class="field full">
-          <label>Legal comments</label>
-          <textarea id="m-legalComments"></textarea>
-          <div class="hint" id="m-legalComments-hint" hidden>Set by the Legal team — read-only from Procurement view.</div>
-        </div>
+        <div class="field full"><label>Legal comments</label><textarea id="m-legalComments"></textarea></div>
         <div class="field full"><label>Comments</label><textarea id="m-comments"></textarea></div>
       </div>
       <div class="modal-foot">
@@ -1080,64 +893,6 @@
 <datalist id="dl-procurement"></datalist>
 <datalist id="dl-exco"></datalist>
 <datalist id="dl-legal"></datalist>
-
-<div class="overlay" id="taskModalOverlay" hidden>
-  <div class="modal">
-    <div class="modal-head">
-      <h2 id="taskModalTitle">Add task</h2>
-      <button class="btn icon-only subtle" id="taskModalClose">✕</button>
-    </div>
-    <form id="taskModalForm">
-      <div class="modal-body">
-        <div class="field full"><label>Task title</label><input id="t-title" required></div>
-        <div class="field full"><label>Description</label><textarea id="t-notes" placeholder="Optional details..."></textarea></div>
-        <div class="field">
-          <label>Assignee</label>
-          <select id="t-assignee"></select>
-          <div class="hint" id="t-assignee-hint" hidden>Auto-set from your Procurement view.</div>
-        </div>
-        <div class="field"><label>Column</label>
-          <select id="t-column">
-            <option value="todo">To Do</option>
-            <option value="doing">In Progress</option>
-            <option value="done">Done</option>
-          </select>
-        </div>
-        <div class="field"><label>Due date</label><input id="t-due" type="date"></div>
-        <div class="field"><label>Repeats</label>
-          <select id="t-recurrence">
-            <option value="none">Does not repeat</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="biweekly">Every 2 weeks</option>
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-          </select>
-          <div class="hint">When a repeating task is marked Done, the next one is created automatically from the due date.</div>
-        </div>
-        <div class="field full"><label>Link to a contract (optional)</label>
-          <select id="t-link"><option value="">— No linked contract —</option></select>
-          <div class="hint">Only "To Be Signed" contracts (open or on hold) are listed.</div>
-        </div>
-      </div>
-      <div class="modal-foot">
-        <button type="button" class="btn danger-outline" id="taskDeleteBtn" style="display:none; margin-right:auto;">Delete task</button>
-        <button type="button" class="btn subtle" id="taskModalCancel">Cancel</button>
-        <button type="submit" class="btn primary" id="taskModalSave">Save task</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<div class="overlay" id="dayDetailOverlay" hidden>
-  <div class="day-detail-card">
-    <div class="day-detail-head">
-      <h3 id="dayDetailTitle"></h3>
-      <button class="btn icon-only subtle" id="dayDetailClose">✕</button>
-    </div>
-    <div class="day-detail-body" id="dayDetailBody"></div>
-  </div>
-</div>
 
 <div class="overlay" id="itemDetailOverlay" hidden>
   <div class="detail-card" id="itemDetailCard"></div>
@@ -8079,7 +7834,7 @@ const PROCUREMENT_PEOPLE = ['Abhijith', 'Burhan', 'Cyriac', 'Evita', 'Evita/Burh
 // ============ Supabase config ============
 // Fill these in with your own project's values after running seed.sql (see SETUP.md).
 // Leaving them as-is keeps the tool fully local (each browser has its own copy, same as before).
-const SUPABASE_URL = 'amtqlhqmcpnrfhvrhbqj.supabase.co';
+const SUPABASE_URL = 'https://amtqlhqmcpnrfhvrhbqj.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdHFsaHFtY3BucmZodnJoYnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDk2NjgsImV4cCI6MjA5NDkyNTY2OH0.lQH5Syx2D1Xk-n1pHpL_V4QgRv1Y_qKl2XyF3CQ681o';
 let supa = null;
 let realtimeChannel = null;
@@ -8106,14 +7861,6 @@ let state = {
   sort: { key: 'priority', dir: 'asc' },
   editingId: null,
   pinColumns: true, // freezes Vendor + Actions columns while scrolling the wide table sideways
-
-  // ---- Project Tracker (Procurement-only Trello-style board) ----
-  projects: [],              // task cards: { id, title, notes, assignee, column, dueDate, recurrence, linkedContractId, seriesId, createdAt, completedAt }
-  projectsOnline: false,     // true once the 'projects' table has been confirmed reachable in Supabase
-  projectView: 'board',      // 'board' | 'calendar' — purely local UI state, not persisted
-  projectFilters: { search: '', assignee: '' },
-  editingTaskId: null,
-  calCursor: null,           // { year, month } for the calendar view — set on boot to the current month
 };
 
 // ---- Row <-> item mapping (DB uses snake_case columns; the app uses camelCase) ----
@@ -8144,68 +7891,6 @@ function itemToRow(item) {
 }
 function rowToLog(r) {
   return { ts: r.ts, user: r.user_name, action: r.action, vendor: r.vendor || '', description: r.description || '', details: r.details || [] };
-}
-
-// ---- Project Tracker row <-> task mapping ----
-function rowToProject(r) {
-  return {
-    id: r.id, title: r.title || '', notes: r.notes || '', assignee: r.assignee || '',
-    column: r.board_status || 'todo', dueDate: r.due_date || null, recurrence: r.recurrence || 'none',
-    linkedContractId: r.linked_contract_id || null, seriesId: r.series_id || r.id,
-    createdAt: r.created_at || new Date().toISOString(), completedAt: r.completed_at || null,
-  };
-}
-function projectToRow(t) {
-  return {
-    id: t.id, title: t.title, notes: t.notes || null, assignee: t.assignee || null,
-    board_status: t.column, due_date: t.dueDate || null, recurrence: t.recurrence || 'none',
-    linked_contract_id: t.linkedContractId || null, series_id: t.seriesId || t.id,
-    created_at: t.createdAt, completed_at: t.completedAt || null,
-  };
-}
-const PROJECTS_LOCAL_KEY = 'cpl_projects_local_v1';
-function loadProjectsLocal() {
-  try {
-    const raw = localStorage.getItem(PROJECTS_LOCAL_KEY);
-    state.projects = raw ? JSON.parse(raw) : [];
-  } catch (err) { state.projects = []; }
-}
-// Keeps a per-browser backup of the task board in localStorage at all times — a safety
-// net for anyone opening this before the shared `projects` table has been created in
-// Supabase (see PROJECTS_SETUP_SQL below), and a harmless no-op once it has been.
-function saveProjectsLocal() {
-  try { localStorage.setItem(PROJECTS_LOCAL_KEY, JSON.stringify(state.projects)); } catch (err) { /* private browsing etc. */ }
-}
-// Loaded separately from loadData() (contracts/log/lists) so that a missing `projects`
-// table — e.g. before an admin has run PROJECTS_SETUP_SQL — never breaks the rest of
-// the app. Falls back to this browser's local copy, same spirit as the rest of the tool.
-async function loadProjectsData() {
-  if (supa) {
-    try {
-      const p = await supa.from('projects').select('*').order('created_at', { ascending: true });
-      if (p.error) throw p.error;
-      state.projects = (p.data || []).map(rowToProject);
-      state.projectsOnline = true;
-      saveProjectsLocal();
-      return;
-    } catch (err) {
-      console.error('Could not load the project tracker table from Supabase — using this browser\'s local copy. Run PROJECTS_SETUP_SQL (see comment near it) to enable shared syncing.', err);
-      state.projectsOnline = false;
-    }
-  }
-  loadProjectsLocal();
-}
-function pushProjectRow(t) {
-  saveProjectsLocal();
-  if (!supa || !state.projectsOnline) return;
-  supa.from('projects').upsert(projectToRow(t), { onConflict: 'id' })
-    .then(({ error }) => { if (error) syncFail('task save failed', error); });
-}
-function pushProjectDelete(id) {
-  saveProjectsLocal();
-  if (!supa || !state.projectsOnline) return;
-  supa.from('projects').delete().eq('id', id)
-    .then(({ error }) => { if (error) syncFail('task delete failed', error); });
 }
 
 function loadSeedLocal() {
@@ -8245,7 +7930,6 @@ async function loadData() {
       LIST_CATEGORIES.forEach(cat => state.lists[cat.key].sort((a, b) => a.localeCompare(b)));
       (sl.data || []).forEach(row => { if (STATUS_META[row.code]) STATUS_META[row.code].label = row.label; });
       state.online = true;
-      await loadProjectsData();
       subscribeRealtime();
       return;
     } catch (err) {
@@ -8255,7 +7939,6 @@ async function loadData() {
   }
   loadSeedLocal();
   initLists();
-  await loadProjectsData();
 }
 
 // ---- Realtime: pick up edits made by other people/tabs without needing a refresh ----
@@ -8269,27 +7952,16 @@ function subscribeRealtime() {
       renderAll();
     }, 250);
   };
-  const refreshProjects = () => {
-    clearTimeout(pending);
-    pending = setTimeout(async () => {
-      await loadProjectsData();
-      renderAll();
-    }, 250);
-  };
   realtimeChannel = supa.channel('contract-list-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'change_log' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'managed_lists' }, refresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'status_labels' }, refresh)
-    // If the `projects` table doesn't exist yet (PROJECTS_SETUP_SQL not run), Supabase
-    // just never fires this — it doesn't error the whole channel.
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, refreshProjects)
     .subscribe();
 }
 
 // ============ Utilities ============
 function uid() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-function taskUid() { return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -8339,35 +8011,6 @@ const STATUS_META = {
   CLOSED: { label: 'Signed', cls: 'badge-good' },
 };
 
-// ============ Project Tracker meta ============
-const PROJECT_COLUMNS = [
-  { key: 'todo',  label: 'To Do',       dotColor: 'var(--blue)' },
-  { key: 'doing', label: 'In Progress', dotColor: 'var(--yellow)' },
-  { key: 'done',  label: 'Done',        dotColor: 'var(--good)' },
-];
-const RECURRENCE_META = {
-  none: 'Does not repeat', daily: 'Repeats daily', weekly: 'Repeats weekly',
-  biweekly: 'Repeats every 2 weeks', monthly: 'Repeats monthly', quarterly: 'Repeats quarterly',
-};
-function nextDueDate(dateISO, freq) {
-  const d = new Date(dateISO + 'T00:00:00');
-  if (isNaN(d)) return null;
-  if (freq === 'daily') d.setDate(d.getDate() + 1);
-  else if (freq === 'weekly') d.setDate(d.getDate() + 7);
-  else if (freq === 'biweekly') d.setDate(d.getDate() + 14);
-  else if (freq === 'monthly') d.setMonth(d.getMonth() + 1);
-  else if (freq === 'quarterly') d.setMonth(d.getMonth() + 3);
-  else return null;
-  return d.toISOString().slice(0, 10);
-}
-function taskDueChipClass(t) {
-  if (!t.dueDate || t.column === 'done') return '';
-  const d = daysUntil(t.dueDate);
-  if (d != null && d < 0) return 'overdue';
-  if (d != null && d <= 3) return 'soon';
-  return '';
-}
-
 function priorityBadge(p) {
   const m = PRIORITY_META[p] || PRIORITY_META[4];
   return `<span class="badge ${m.cls}"><span class="dot" style="background:currentColor"></span>${m.label}</span>`;
@@ -8394,20 +8037,13 @@ function renewalCell(v) {
   if (lower === 'no') return '<span class="muted-cell">No</span>';
   return '<span class="muted-cell">—</span>';
 }
-// `interactive` is true only in Legal's own view — that's the only place the "Mark
-// completed" button appears. Everywhere else that shows this cell (Procurement, and
-// the read-only Legal Action field in the Add/Edit modal) gets the same information —
-// completed (with its date) or still pending — just without a way to trigger it.
-function legalActionCell(item, interactive) {
+function legalActionCell(item) {
   const pending = (item.pendingLegal || '').toLowerCase() === 'yes';
   if (!pending) return '<span class="muted-cell">—</span>';
   if ((item.legalCompleted || '').toLowerCase() === 'yes') {
     return `<span class="badge badge-good">✓ Completed${item.legalCompletedDate ? ' · ' + fmtDate(item.legalCompletedDate) : ''}</span>`;
   }
-  if (interactive) {
-    return `<button class="legal-complete-btn" data-act="legalcomplete" data-id="${item.id}" title="Mark legal's action on this contract as completed">✓ Mark completed</button>`;
-  }
-  return '<span class="badge badge-warning">⏳ Pending</span>';
+  return `<button class="legal-complete-btn" data-act="legalcomplete" data-id="${item.id}" title="Mark legal's action on this contract as completed">✓ Mark completed</button>`;
 }
 function clampWrap(text) {
   if (!text) return '<span class="muted-cell">—</span>';
@@ -8665,16 +8301,10 @@ const ACTIVE_COLS = [
   { key: '_actions', label: '' },
 ];
 
-function isProcurementView() {
-  const t = state.view && state.view.type;
-  return t === 'procurement-all' || t === 'procurement-individual';
-}
-// "Legal Action" (whether Legal has marked their part done, and when) is relevant to
-// Legal's own view — where the "Mark completed" button lives — and to Procurement, who
-// needs to see it but never triggers it (see legalActionCell's `interactive` flag).
-// CFO doesn't need this column, so it's still hidden there.
+// "Legal Action" (the Mark Completed workflow) only makes sense from Legal's own view —
+// CFO/Procurement don't need to see or trigger it, so the whole column is hidden elsewhere.
 function activeColsForView() {
-  const showLegalAction = !!(state.view && (state.view.type === 'legal' || isProcurementView()));
+  const showLegalAction = !!(state.view && state.view.type === 'legal');
   return showLegalAction ? ACTIVE_COLS : ACTIVE_COLS.filter(c => c.key !== 'legalCompleted');
 }
 
@@ -8701,8 +8331,7 @@ function renderActive() {
   document.getElementById('activeFilterCount').textContent = `${filtered.length} of ${all.length} shown`;
   document.getElementById('cntActive').textContent = all.length;
   renderActiveHead();
-  const legalView = !!(state.view && state.view.type === 'legal');
-  const showLegalAction = legalView || isProcurementView();
+  const showLegalAction = !!(state.view && state.view.type === 'legal');
   const body = document.getElementById('activeBody');
   if (!filtered.length) {
     body.innerHTML = `<tr><td colspan="${activeColsForView().length}"><div class="empty-state">No contracts match these filters.</div></td></tr>`;
@@ -8722,7 +8351,7 @@ function renderActive() {
         <td>${esc(item.legal) || '<span class="muted-cell">—</span>'}</td>
         <td class="legal-comments">${clampWrap(item.legalComments)}</td>
         <td>${pendingCell(item.pendingLegal)}</td>
-        ${showLegalAction ? `<td>${legalActionCell(item, legalView)}</td>` : ''}
+        ${showLegalAction ? `<td>${legalActionCell(item)}</td>` : ''}
         <td>${dateSentCell(item)}</td>
         <td class="comments">${clampWrap(item.comments)}</td>
         <td class="actions-cell pin-right">
@@ -8961,15 +8590,13 @@ function renderKPIs(activeItems, filteredItems) {
     `${closedCount} contracts signed & closed to date (this cycle + historical archive). Once a contract is signed, procurement marks it closed and it moves there. TCV totals only include line items where a numeric value was entered in the source sheet.` +
     (filtersActive ? ` Numbers above reflect the ${filteredItems.length} of ${activeItems.length} contracts currently shown by your view/filters.` : '');
 }
-// The dashboard's own KPI row, sitting above the charts. Same tiles as the table minus
-// "Contracts shown" — redundant here since the subtitle right above already gives the
-// open-contract count, and every chart card shows its own breakdown. Every tile here
-// navigates straight to the full list on click (a fast lane alongside "View full list")
-// rather than toggling a filter in place — the charts below are where selections are
-// built up.
+// The dashboard's own KPI row, sitting above the charts. Same five tiles as the table,
+// but every tile here navigates straight to the full list on click (a fast lane
+// alongside "View full list") rather than toggling a filter in place — the charts
+// below are where selections are built up.
 function renderDashboardKPIs(baseItems) {
   const filtered = baseItems.filter(matchesActiveFilters);
-  const tiles = kpiTileDefs(baseItems, filtered).filter(t => t.key !== 'shown');
+  const tiles = kpiTileDefs(baseItems, filtered);
   document.getElementById('dashKpis').innerHTML = tiles.map(t => `
     <div class="kpi kpi--dash${t.active ? ' active' : ''}" data-kpi="${t.key}" title="Click to view this in the full list">
       <span class="bar" style="background:${t.color}"></span>
@@ -8982,162 +8609,7 @@ function renderAll() {
   renderClosed();
   renderLog();
   renderSettings();
-  renderProjectsTab();
   document.getElementById('lastUpdated').textContent = 'Loaded ' + fmtDateTime(new Date().toISOString());
-}
-
-// ============ Project Tracker (Procurement-only Trello-style board + calendar) ============
-// Visible only while state.view.type is 'procurement-all' or 'procurement-individual' — the
-// nav tab itself is shown/hidden in showTable(). An individual view is always locked to that
-// one person's tasks, exactly like the contract list's Procurement filter is locked there.
-function visibleTasks() {
-  let list = state.projects.slice();
-  if (state.view && state.view.type === 'procurement-individual') {
-    list = list.filter(t => t.assignee === state.view.person);
-  } else if (state.projectFilters.assignee) {
-    list = list.filter(t => t.assignee === state.projectFilters.assignee);
-  }
-  const q = (state.projectFilters.search || '').trim().toLowerCase();
-  if (q) list = list.filter(t => (t.title || '').toLowerCase().includes(q) || (t.notes || '').toLowerCase().includes(q));
-  return list;
-}
-function linkedContract(t) {
-  return t.linkedContractId ? state.items.find(i => i.id === t.linkedContractId) : null;
-}
-function taskChipsHTML(t) {
-  const chips = [];
-  if (t.assignee) chips.push(`<span class="task-chip assignee">👤 ${esc(t.assignee)}</span>`);
-  if (t.dueDate) chips.push(`<span class="task-chip due ${taskDueChipClass(t)}">📅 ${fmtDate(t.dueDate)}</span>`);
-  if (t.recurrence && t.recurrence !== 'none') chips.push(`<span class="task-chip recurring" title="${esc(RECURRENCE_META[t.recurrence] || '')}">🔁 ${esc(RECURRENCE_META[t.recurrence] || '')}</span>`);
-  const contract = linkedContract(t);
-  if (contract) chips.push(`<button type="button" class="task-chip link" data-openlink="${esc(contract.id)}">🔗 ${esc(contract.vendor)}</button>`);
-  else if (t.linkedContractId) chips.push(`<span class="task-chip link" title="This contract was removed or closed">🔗 (removed)</span>`);
-  return chips.join('');
-}
-function taskCardHTML(t) {
-  const doneBtn = t.column !== 'done' ? `<button type="button" class="primary" data-taskact="done" data-id="${t.id}">✓ Done</button>` : '';
-  const advance = { todo: 'doing', doing: 'done' };
-  const advBtn = advance[t.column] ? `<button type="button" data-taskact="advance" data-id="${t.id}">→ ${PROJECT_COLUMNS.find(c => c.key === advance[t.column]).label}</button>` : '';
-  return `
-    <div class="task-card${t.column === 'done' ? ' done' : ''}" draggable="true" data-id="${t.id}">
-      <p class="task-title">${esc(t.title)}</p>
-      <div class="task-meta">${taskChipsHTML(t)}</div>
-      <div class="task-card-actions">
-        <button type="button" data-taskact="edit" data-id="${t.id}">✎ Edit</button>
-        ${t.column !== 'todo' && t.column !== 'done' ? `<button type="button" data-taskact="back" data-id="${t.id}">← To Do</button>` : ''}
-        ${advBtn}
-        ${doneBtn}
-      </div>
-    </div>`;
-}
-function renderKanbanBoard() {
-  const tasks = visibleTasks();
-  const el = document.getElementById('kanbanBoard');
-  el.innerHTML = PROJECT_COLUMNS.map(col => {
-    const colTasks = tasks.filter(t => t.column === col.key)
-      .sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || a.createdAt.localeCompare(b.createdAt));
-    const body = colTasks.length
-      ? `<div class="kanban-cards" data-col="${col.key}">${colTasks.map(taskCardHTML).join('')}</div>`
-      : `<div class="kanban-cards" data-col="${col.key}"><div class="kanban-empty">No tasks here</div></div>`;
-    return `
-      <div class="kanban-col" data-col="${col.key}">
-        <div class="kanban-col-head"><span class="dot" style="background:${col.dotColor}"></span>${col.label}<span class="count">${colTasks.length}</span></div>
-        ${body}
-      </div>`;
-  }).join('');
-}
-
-// ---- Calendar ----
-const CAL_DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-function renderCalendar() {
-  const tasks = visibleTasks();
-  if (!state.calCursor) { const n = new Date(); state.calCursor = { year: n.getFullYear(), month: n.getMonth() }; }
-  const { year, month } = state.calCursor;
-  document.getElementById('calTitle').textContent = new Date(year, month, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-
-  const byDate = {};
-  tasks.forEach(t => { if (t.dueDate) { (byDate[t.dueDate] = byDate[t.dueDate] || []).push(t); } });
-
-  const firstOfMonth = new Date(year, month, 1);
-  const startOffset = firstOfMonth.getDay(); // 0=Sun
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysInPrevMonth = new Date(year, month, 0).getDate();
-  const todayISOStr = todayISO();
-
-  const cells = [];
-  for (let i = 0; i < startOffset; i++) {
-    const dnum = daysInPrevMonth - startOffset + 1 + i;
-    cells.push({ outside: true, dnum });
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    cells.push({ outside: false, dnum: d, iso, tasks: byDate[iso] || [], isToday: iso === todayISOStr });
-  }
-  while (cells.length % 7 !== 0 || cells.length < 42) {
-    const dnum = cells.length - (startOffset + daysInMonth) + 1;
-    cells.push({ outside: true, dnum });
-    if (cells.length >= 42) break;
-  }
-
-  const dowHTML = CAL_DOW.map(d => `<div class="cal-dow">${d}</div>`).join('');
-  const cellsHTML = cells.map(c => {
-    if (c.outside) return `<div class="cal-day outside"><span class="cal-daynum">${c.dnum}</span></div>`;
-    const shown = c.tasks.slice(0, 3);
-    const more = c.tasks.length - shown.length;
-    const chips = shown.map(t => {
-      const overdue = taskDueChipClass(t) === 'overdue';
-      return `<button type="button" class="cal-chip col-${t.column}${overdue ? ' overdue' : ''}" data-taskact="edit" data-id="${t.id}" title="${esc(t.title)}">${esc(t.title)}</button>`;
-    }).join('');
-    const moreHTML = more > 0 ? `<span class="cal-more">+${more} more</span>` : '';
-    return `<div class="cal-day${c.isToday ? ' today' : ''}" data-daycell="${c.iso}"><span class="cal-daynum">${c.dnum}</span>${chips}${moreHTML}</div>`;
-  }).join('');
-  document.getElementById('calGrid').innerHTML = dowHTML + cellsHTML;
-
-  const unscheduled = tasks.filter(t => !t.dueDate && t.column !== 'done');
-  const uw = document.getElementById('calUnscheduled');
-  uw.innerHTML = unscheduled.length
-    ? `<h4>Unscheduled (no due date)</h4><div class="cal-unsched-list">${unscheduled.map(t => `<button type="button" class="task-chip due" data-taskact="edit" data-id="${t.id}">${esc(t.title)}</button>`).join('')}</div>`
-    : '';
-}
-function openDayDetail(iso) {
-  const tasks = visibleTasks().filter(t => t.dueDate === iso);
-  document.getElementById('dayDetailTitle').textContent = new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-  const body = document.getElementById('dayDetailBody');
-  body.innerHTML = (tasks.length ? tasks.map(taskCardHTML).join('') : '<div class="proj-empty">Nothing due this day.</div>')
-    + `<button type="button" class="btn primary small" id="dayDetailAddBtn" style="margin-top:6px;">+ Add task for this day</button>`;
-  document.getElementById('dayDetailOverlay').hidden = false;
-  document.getElementById('dayDetailAddBtn').addEventListener('click', () => {
-    closeDayDetail();
-    openTaskModal(null, iso);
-  });
-}
-function closeDayDetail() {
-  document.getElementById('dayDetailOverlay').hidden = true;
-  document.getElementById('dayDetailBody').innerHTML = '';
-}
-
-function renderProjectsTab() {
-  const openCount = state.projects.filter(t => {
-    if (t.column === 'done') return false;
-    if (state.view && state.view.type === 'procurement-individual') return t.assignee === state.view.person;
-    return true;
-  }).length;
-  const btn = document.getElementById('projectsTabBtn');
-  if (btn) document.getElementById('cntProjects').textContent = openCount;
-  if (!isProcurementView()) return; // sections stay empty/hidden — nothing to render
-  document.getElementById('projFilterCount').textContent = `${visibleTasks().length} task${visibleTasks().length === 1 ? '' : 's'}`;
-  const badge = document.getElementById('projConnBadge');
-  if (badge) {
-    if (state.projectsOnline) {
-      badge.innerHTML = '🟢 Live — shared with Procurement';
-      badge.title = 'Connected to the shared Supabase "projects" table. Tasks are visible to every procurement user with this link.';
-    } else {
-      badge.innerHTML = '⚪ Local only';
-      badge.title = 'Not yet connected to a shared "projects" table — these tasks only live in your browser. Run PROJECTS_SETUP_SQL once in Supabase to make the board shared.';
-    }
-  }
-  if (state.projectView === 'calendar') renderCalendar();
-  else renderKanbanBoard();
 }
 
 // ============ Focus View (big, presentation-friendly mode) ============
@@ -9240,8 +8712,7 @@ function itemDetailHTML(item) {
   if ((item.renewal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-blue">Renewal</span>');
   if ((item.pendingLegal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-critical">Pending Legal</span>');
 
-  const legalView = !!(state.view && state.view.type === 'legal');
-  const showLegalAction = legalView || isProcurementView();
+  const showLegalAction = !!(state.view && state.view.type === 'legal');
 
   const field = (lbl, val) => `<div class="detail-field"><div class="lbl">${lbl}</div><div class="val">${val || '<span class="muted-cell">—</span>'}</div></div>`;
 
@@ -9267,7 +8738,7 @@ function itemDetailHTML(item) {
       ${field('Legal', esc(item.legal))}
       ${field('Pending Legal', pendingCell(item.pendingLegal))}
       ${field('Date Sent to Legal', dateSentCell(item))}
-      ${showLegalAction ? field('Legal Action', legalActionCell(item, legalView)) : ''}
+      ${showLegalAction ? field('Legal Action', legalActionCell(item)) : ''}
       ${field('PR on Kissflow', esc(item.kissflow))}
     </div>
     ${sections.join('')}
@@ -9447,22 +8918,8 @@ function openModal(item) {
   document.getElementById('m-pendingLegal').value = item ? item.pendingLegal : '';
   document.getElementById('m-dateSentToLegal').value = item && item.dateSentToLegal ? item.dateSentToLegal : '';
   updateDateSentEnabled();
-
-  // Legal Comments is Legal's own input — Procurement can see it, but not edit it here.
-  // A read-only "Legal action" status line (completed/pending) sits alongside it so
-  // Procurement always has that context without needing the table or Item Detail view.
-  const legalCommentsField = document.getElementById('m-legalComments');
-  const lockLegalComments = isProcurementView();
-  legalCommentsField.disabled = lockLegalComments;
-  document.getElementById('m-legalComments-hint').hidden = !lockLegalComments;
-  legalCommentsField.value = item ? item.legalComments : '';
-
-  const legalActionField = document.getElementById('m-legalActionField');
-  legalActionField.hidden = !item;
-  if (item) document.getElementById('m-legalActionStatus').innerHTML = legalActionCell(item, false);
-
+  document.getElementById('m-legalComments').value = item ? item.legalComments : '';
   document.getElementById('m-comments').value = item ? item.comments : '';
-  applyFieldRequirements();
   document.getElementById('modalOverlay').hidden = false;
 }
 function updateDateSentEnabled() {
@@ -9470,31 +8927,6 @@ function updateDateSentEnabled() {
   const dateField = document.getElementById('m-dateSentToLegal');
   dateField.disabled = pending !== 'Yes';
   if (pending !== 'Yes') dateField.value = '';
-}
-// Procurement (and every individual procurement view) must fill in every field here
-// before saving, with these exceptions: Yearly TCV stays optional (a value isn't always
-// known up front); Expiry is only required once Renewal is set to Yes; Date Sent to
-// Legal is only required once Pending Legal is set to Yes (it's disabled, and so
-// unreachable, otherwise). Legal Comments is excluded too — Procurement can't edit that
-// field at all (see openModal), so it can't be asked to fill it in. Every other view
-// keeps the original, looser rules (just Vendor + Description), unchanged.
-const PROCUREMENT_MANDATORY_IDS = [
-  'm-priority', 'm-renewal', 'm-status', 'm-kissflow', 'm-procurement',
-  'm-exco', 'm-responsible', 'm-legal', 'm-pendingLegal', 'm-comments',
-];
-function applyFieldRequirements() {
-  const mandatory = isProcurementView();
-  PROCUREMENT_MANDATORY_IDS.forEach(id => { document.getElementById(id).required = mandatory; });
-  updateExpiryRequired();
-  updateDateSentRequired();
-}
-function updateExpiryRequired() {
-  const isRenewal = document.getElementById('m-renewal').value === 'Yes';
-  document.getElementById('m-expiry').required = isProcurementView() && isRenewal;
-}
-function updateDateSentRequired() {
-  const isPending = document.getElementById('m-pendingLegal').value === 'Yes';
-  document.getElementById('m-dateSentToLegal').required = isProcurementView() && isPending;
 }
 function closeModal() { document.getElementById('modalOverlay').hidden = true; state.editingId = null; }
 
@@ -9561,142 +8993,6 @@ function onModalSubmit(e) {
     const refreshed = state.items.find(i => i.id === detailViewItemId);
     if (refreshed) openItemDetail(refreshed);
   }
-}
-
-// ============ Project Tracker: task modal ============
-function populateTaskAssigneeSelect() {
-  const sel = document.getElementById('t-assignee');
-  sel.innerHTML = PROCUREMENT_PEOPLE.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
-}
-function populateTaskLinkSelect() {
-  const sel = document.getElementById('t-link');
-  const options = state.items
-    .filter(i => i.status !== 'CLOSED')
-    .slice()
-    .sort((a, b) => (a.vendor || '').localeCompare(b.vendor || ''))
-    .map(i => `<option value="${esc(i.id)}">${esc(i.vendor)} — ${esc((i.description || '').slice(0, 60))}</option>`)
-    .join('');
-  sel.innerHTML = '<option value="">— No linked contract —</option>' + options;
-}
-function openTaskModal(task, presetDueDate) {
-  state.editingTaskId = task ? task.id : null;
-  document.getElementById('taskModalTitle').textContent = task ? 'Edit task' : 'Add task';
-  populateTaskAssigneeSelect();
-  populateTaskLinkSelect();
-  document.getElementById('t-title').value = task ? task.title : '';
-  document.getElementById('t-notes').value = task ? (task.notes || '') : '';
-  document.getElementById('t-column').value = task ? task.column : 'todo';
-  document.getElementById('t-due').value = task ? (task.dueDate || '') : (presetDueDate || '');
-  document.getElementById('t-recurrence').value = task ? (task.recurrence || 'none') : 'none';
-  document.getElementById('t-link').value = task ? (task.linkedContractId || '') : '';
-
-  const lockAssignee = !task && state.view && state.view.type === 'procurement-individual';
-  const assigneeField = document.getElementById('t-assignee');
-  assigneeField.value = task ? task.assignee : (lockAssignee ? state.view.person : (state.view ? (state.view.person || PROCUREMENT_PEOPLE[0]) : PROCUREMENT_PEOPLE[0]));
-  assigneeField.disabled = !!lockAssignee;
-  document.getElementById('t-assignee-hint').hidden = !lockAssignee;
-
-  document.getElementById('taskDeleteBtn').style.display = task ? '' : 'none';
-  document.getElementById('taskModalOverlay').hidden = false;
-}
-function closeTaskModal() { document.getElementById('taskModalOverlay').hidden = true; state.editingTaskId = null; }
-
-function onTaskModalSubmit(e) {
-  e.preventDefault();
-  const title = document.getElementById('t-title').value.trim();
-  if (!title) { toast('Task title is required'); return; }
-  const recurrence = document.getElementById('t-recurrence').value;
-  const dueDate = document.getElementById('t-due').value || null;
-  if (recurrence !== 'none' && !dueDate) { toast('A repeating task needs a due date, so the next one can be scheduled.'); return; }
-  const rec = {
-    title, notes: document.getElementById('t-notes').value.trim(),
-    assignee: document.getElementById('t-assignee').value,
-    column: document.getElementById('t-column').value,
-    dueDate, recurrence,
-    linkedContractId: document.getElementById('t-link').value || null,
-  };
-  if (state.editingTaskId) {
-    const idx = state.projects.findIndex(t => t.id === state.editingTaskId);
-    if (idx > -1) {
-      const old = state.projects[idx];
-      const wasDone = old.column !== 'done' && rec.column === 'done';
-      const merged = Object.assign({}, old, rec, { completedAt: rec.column === 'done' ? (old.completedAt || new Date().toISOString()) : null });
-      state.projects[idx] = merged;
-      pushProjectRow(merged);
-      if (wasDone) spawnNextRecurrence(merged);
-      toast('Task updated');
-    }
-  } else {
-    const id = taskUid();
-    const newTask = Object.assign({ id, seriesId: id, createdAt: new Date().toISOString(), completedAt: rec.column === 'done' ? new Date().toISOString() : null }, rec);
-    state.projects.push(newTask);
-    pushProjectRow(newTask);
-    if (newTask.column === 'done') spawnNextRecurrence(newTask);
-    toast('Task added');
-  }
-  closeTaskModal();
-  renderProjectsTab();
-}
-function deleteTaskFromModal() {
-  if (!state.editingTaskId) return;
-  const task = state.projects.find(t => t.id === state.editingTaskId);
-  if (!task) return;
-  if (!confirm(`Delete task "${task.title}"? This cannot be undone.`)) return;
-  state.projects = state.projects.filter(t => t.id !== task.id);
-  pushProjectDelete(task.id);
-  closeTaskModal();
-  renderProjectsTab();
-  toast('Task deleted');
-}
-// Repeating tasks keep exactly one live card at a time: marking the current occurrence
-// Done creates the next one (same series) rather than pre-generating a long list up front —
-// simpler to look at, and it never drifts if the recurrence rule changes mid-series.
-function spawnNextRecurrence(task) {
-  if (!task.recurrence || task.recurrence === 'none' || !task.dueDate) return;
-  const already = state.projects.some(t => t.seriesId === task.seriesId && t.id !== task.id && t.createdAt > task.createdAt);
-  if (already) return; // guards against double-spawning if this task is saved twice
-  const next = nextDueDate(task.dueDate, task.recurrence);
-  if (!next) return;
-  const id = taskUid();
-  const nextTask = {
-    id, seriesId: task.seriesId, title: task.title, notes: task.notes, assignee: task.assignee,
-    column: 'todo', dueDate: next, recurrence: task.recurrence, linkedContractId: task.linkedContractId,
-    createdAt: new Date().toISOString(), completedAt: null,
-  };
-  state.projects.push(nextTask);
-  pushProjectRow(nextTask);
-  toast(`Recurring task completed — next one scheduled for ${fmtDate(next).replace(/<[^>]+>/g, '') || next}.`);
-}
-function completeTask(task) {
-  task.column = 'done';
-  task.completedAt = new Date().toISOString();
-  pushProjectRow(task);
-  spawnNextRecurrence(task);
-  renderProjectsTab();
-}
-function advanceTask(task) {
-  const order = ['todo', 'doing', 'done'];
-  const idx = order.indexOf(task.column);
-  if (idx < 0 || idx >= order.length - 1) return;
-  const nextCol = order[idx + 1];
-  if (nextCol === 'done') { completeTask(task); return; }
-  task.column = nextCol;
-  pushProjectRow(task);
-  renderProjectsTab();
-}
-function moveTaskBackToTodo(task) {
-  task.column = 'todo';
-  task.completedAt = null;
-  pushProjectRow(task);
-  renderProjectsTab();
-}
-function moveTaskToColumn(task, col) {
-  if (task.column === col) return;
-  if (col === 'done') { completeTask(task); return; }
-  task.column = col;
-  task.completedAt = null;
-  pushProjectRow(task);
-  renderProjectsTab();
 }
 
 // ============ Export (CSV) / Backup (JSON) / Import ============
@@ -9768,17 +9064,12 @@ function importData(file) {
 
 // ============ Tabs ============
 function setActiveTab(tab) {
-  // The Project Tracker tab only ever exists for Procurement views — guard against it
-  // being reached (e.g. a stale click) from a CFO/Legal view where its button is hidden.
-  if (tab === 'projects' && !isProcurementView()) tab = 'active';
   state.tab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.getElementById('tab-active').hidden = tab !== 'active';
   document.getElementById('tab-closed').hidden = tab !== 'closed';
   document.getElementById('tab-log').hidden = tab !== 'log';
   document.getElementById('tab-settings').hidden = tab !== 'settings';
-  document.getElementById('tab-projects').hidden = tab !== 'projects';
-  if (tab === 'projects') renderProjectsTab();
 }
 
 // ============ Views / landing page ============
@@ -9828,19 +9119,6 @@ function showTable() {
   document.getElementById('viewBadge').innerHTML = `Viewing as: ${esc(viewLabel())} <button id="changeViewBtn">Change view</button>${dashBtn}`;
   document.getElementById('changeViewBtn').addEventListener('click', backToLanding);
   if (isDashboardView) document.getElementById('tableDashboardBtn').addEventListener('click', showDashboard);
-
-  // Project Tracker tab: Procurement-only, per the "Procurement View + each procurement
-  // user" requirement. The per-person assignee filter inside it is only useful in the
-  // team-wide "All" view — an individual view is already locked to that one person.
-  const isProcurement = type === 'procurement-all' || type === 'procurement-individual';
-  document.getElementById('projectsTabBtn').hidden = !isProcurement;
-  document.getElementById('fp-assignee').style.display = (type === 'procurement-individual') ? 'none' : '';
-  if (isProcurement) {
-    const sel = document.getElementById('fp-assignee');
-    sel.innerHTML = '<option value="">All procurement</option>' + PROCUREMENT_PEOPLE.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
-    sel.value = state.projectFilters.assignee || '';
-  }
-
   setActiveTab('active');
   syncFilterUI();
   renderAll();
@@ -10091,11 +9369,9 @@ async function boot() {
   });
   document.getElementById('m-pendingLegal').addEventListener('change', () => {
     updateDateSentEnabled();
-    updateDateSentRequired();
     const dateField = document.getElementById('m-dateSentToLegal');
     if (document.getElementById('m-pendingLegal').value === 'Yes' && !dateField.value) dateField.value = todayISO();
   });
-  document.getElementById('m-renewal').addEventListener('change', updateExpiryRequired);
 
   document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
   document.getElementById('backupBtn').addEventListener('click', exportBackup);
@@ -10204,118 +9480,6 @@ async function boot() {
   document.getElementById('fc-search').addEventListener('input', e => { state.closedFilters.search = e.target.value; renderClosed(); });
   document.getElementById('fc-source').addEventListener('change', e => { state.closedFilters.source = e.target.value; renderClosed(); });
   document.getElementById('fl-search').addEventListener('input', e => { state.logFilters.search = e.target.value; renderLog(); });
-
-  wireProjectTracker();
-}
-
-// ============ Project Tracker: wiring (board, calendar, modal, drag & drop) ============
-function taskFromAct(e) {
-  const btn = e.target.closest('[data-taskact]');
-  if (!btn) return null;
-  const task = state.projects.find(t => t.id === btn.dataset.id);
-  return task ? { act: btn.dataset.taskact, task } : null;
-}
-function handleTaskActClick(e) {
-  const found = taskFromAct(e);
-  if (!found) return;
-  const { act, task } = found;
-  if (act === 'edit') openTaskModal(task);
-  else if (act === 'done') completeTask(task);
-  else if (act === 'advance') advanceTask(task);
-  else if (act === 'back') moveTaskBackToTodo(task);
-}
-function wireProjectTracker() {
-  document.getElementById('addTaskBtn').addEventListener('click', () => openTaskModal(null));
-  document.getElementById('taskModalClose').addEventListener('click', closeTaskModal);
-  document.getElementById('taskModalCancel').addEventListener('click', closeTaskModal);
-  document.getElementById('taskModalOverlay').addEventListener('click', e => { if (e.target.id === 'taskModalOverlay') closeTaskModal(); });
-  document.getElementById('taskModalForm').addEventListener('submit', onTaskModalSubmit);
-  document.getElementById('taskDeleteBtn').addEventListener('click', deleteTaskFromModal);
-
-  document.getElementById('dayDetailClose').addEventListener('click', closeDayDetail);
-  document.getElementById('dayDetailOverlay').addEventListener('click', e => { if (e.target.id === 'dayDetailOverlay') closeDayDetail(); });
-  document.getElementById('dayDetailBody').addEventListener('click', handleTaskActClick);
-
-  document.getElementById('fp-search').addEventListener('input', e => { state.projectFilters.search = e.target.value; renderProjectsTab(); });
-  document.getElementById('fp-assignee').addEventListener('change', e => { state.projectFilters.assignee = e.target.value; renderProjectsTab(); });
-
-  document.getElementById('projViewSwitch').addEventListener('click', e => {
-    const btn = e.target.closest('button[data-projview]');
-    if (!btn) return;
-    state.projectView = btn.dataset.projview;
-    document.querySelectorAll('#projViewSwitch button').forEach(b => b.classList.toggle('active', b === btn));
-    document.getElementById('projBoardWrap').hidden = state.projectView !== 'board';
-    document.getElementById('projCalendarWrap').hidden = state.projectView !== 'calendar';
-    renderProjectsTab();
-  });
-
-  document.getElementById('calPrevBtn').addEventListener('click', () => { shiftCalMonth(-1); });
-  document.getElementById('calNextBtn').addEventListener('click', () => { shiftCalMonth(1); });
-  document.getElementById('calTodayBtn').addEventListener('click', () => {
-    const n = new Date();
-    state.calCursor = { year: n.getFullYear(), month: n.getMonth() };
-    renderCalendar();
-  });
-  document.getElementById('calGrid').addEventListener('click', e => {
-    if (e.target.closest('[data-taskact]')) { handleTaskActClick(e); return; }
-    const cell = e.target.closest('[data-daycell]');
-    if (cell) openDayDetail(cell.dataset.daycell);
-  });
-  document.getElementById('calUnscheduled').addEventListener('click', handleTaskActClick);
-
-  // Kanban: click actions (edit / done / advance / back) delegate from the board root.
-  document.getElementById('kanbanBoard').addEventListener('click', e => {
-    if (e.target.closest('[data-openlink]')) {
-      const id = e.target.closest('[data-openlink]').dataset.openlink;
-      const item = state.items.find(i => i.id === id);
-      if (item) openItemDetail(item);
-      return;
-    }
-    handleTaskActClick(e);
-  });
-  // Kanban: drag & drop a card between columns. Falls back gracefully to the ✎ Edit
-  // modal's Column dropdown and the card's own →/✓ buttons on touch devices, where
-  // HTML5 drag-and-drop isn't reliably available.
-  document.getElementById('kanbanBoard').addEventListener('dragstart', e => {
-    const card = e.target.closest('.task-card');
-    if (!card) return;
-    e.dataTransfer.setData('text/plain', card.dataset.id);
-    e.dataTransfer.effectAllowed = 'move';
-    card.classList.add('dragging');
-  });
-  document.getElementById('kanbanBoard').addEventListener('dragend', e => {
-    const card = e.target.closest('.task-card');
-    if (card) card.classList.remove('dragging');
-  });
-  document.getElementById('kanbanBoard').addEventListener('dragover', e => {
-    const col = e.target.closest('.kanban-col');
-    if (!col) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    col.classList.add('drag-over');
-  });
-  document.getElementById('kanbanBoard').addEventListener('dragleave', e => {
-    const col = e.target.closest('.kanban-col');
-    if (col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
-  });
-  document.getElementById('kanbanBoard').addEventListener('drop', e => {
-    const col = e.target.closest('.kanban-col');
-    if (!col) return;
-    e.preventDefault();
-    col.classList.remove('drag-over');
-    const id = e.dataTransfer.getData('text/plain');
-    const task = state.projects.find(t => t.id === id);
-    if (task) moveTaskToColumn(task, col.dataset.col);
-  });
-}
-function shiftCalMonth(delta) {
-  if (!state.calCursor) { const n = new Date(); state.calCursor = { year: n.getFullYear(), month: n.getMonth() }; }
-  let { year, month } = state.calCursor;
-  month += delta;
-  if (month < 0) { month = 11; year--; }
-  if (month > 11) { month = 0; year++; }
-  state.calCursor = { year, month };
-  renderCalendar();
 }
 
 // ============ Shared password gate ============
