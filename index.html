@@ -4,80 +4,88 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contract Priority List — Wio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* Palette below is matched from actual wio.io screenshots: a vivid indigo-violet
+     brand accent (pill-shaped buttons, marquee headlines, plan cards) on white pages
+     with light-gray borders and near-black text — not the teal guess from before.
+     Every CSS variable name is unchanged, so this is a reskin only: nothing that
+     reads var(--blue) etc. needed to change, just what that token now resolves to. */
   :root, .theme-light {
     color-scheme: light;
-    --surface-1: #fcfcfb;
+    --surface-1: #ffffff;
     --surface-2: #ffffff;
-    --page-plane: #f2f1ee;
-    --text-primary: #0b0b0b;
-    --text-secondary: #52514e;
-    --muted: #898781;
-    --gridline: #e1e0d9;
+    --page-plane: #fafafc;
+    --text-primary: #0e0e14;
+    --text-secondary: #55555f;
+    --muted: #8a8a94;
+    --gridline: #e6e6ec;
     --baseline: #c3c2b7;
-    --success-text: #006300;
-    --border: rgba(11,11,11,0.10);
-    --border-strong: rgba(11,11,11,0.16);
+    --success-text: #0f7a3d;
+    --border: rgba(14,14,20,0.10);
+    --border-strong: rgba(14,14,20,0.18);
 
-    --blue: #2a78d6;
+    --blue: #5433eb;
     --orange: #eb6834;
     --aqua: #1baf7a;
     --yellow: #eda100;
     --magenta: #e87ba4;
     --green: #008300;
-    --violet: #4a3aa7;
+    --violet: #7c3aed;
     --red: #e34948;
 
-    --good: #0ca30c;
+    --good: #16a34a;
     --warning: #fab219;
     --serious: #ec835a;
     --critical: #d03b3b;
 
-    --good-bg: #e6f6e6;
+    --good-bg: #e7f8ee;
     --warning-bg: #fff3d9;
     --serious-bg: #fde7de;
     --critical-bg: #fbe4e4;
-    --blue-bg: #e6f0fb;
-    --violet-bg: #ece8f8;
+    --blue-bg: #f1ecfd;
+    --violet-bg: #f3ecfe;
 
-    --shadow: 0 1px 2px rgba(11,11,11,0.04), 0 4px 16px rgba(11,11,11,0.06);
-    --shadow-lg: 0 8px 24px rgba(11,11,11,0.14), 0 2px 6px rgba(11,11,11,0.08);
+    --shadow: 0 1px 2px rgba(14,14,20,0.05), 0 4px 16px rgba(14,14,20,0.06);
+    --shadow-lg: 0 8px 24px rgba(14,14,20,0.14), 0 2px 6px rgba(14,14,20,0.08);
   }
 
   .theme-dark {
     color-scheme: dark;
-    --surface-1: #1a1a19;
-    --surface-2: #222220;
-    --page-plane: #0d0d0d;
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --muted: #8f8d86;
-    --gridline: #2c2c2a;
+    --surface-1: #15151f;
+    --surface-2: #1c1c2a;
+    --page-plane: #0a0a12;
+    --text-primary: #f5f4fa;
+    --text-secondary: #b8b6c8;
+    --muted: #86849a;
+    --gridline: #2a2a3a;
     --baseline: #383835;
-    --success-text: #0ca30c;
+    --success-text: #34d399;
     --border: rgba(255,255,255,0.10);
     --border-strong: rgba(255,255,255,0.18);
 
-    --blue: #3987e5;
+    --blue: #8b6fff;
     --orange: #d95926;
     --aqua: #199e70;
     --yellow: #c98500;
     --magenta: #d55181;
     --green: #1fa31f;
-    --violet: #9085e9;
+    --violet: #b49afb;
     --red: #e66767;
 
-    --good: #0ca30c;
+    --good: #34d399;
     --warning: #fab219;
     --serious: #ec835a;
     --critical: #e66767;
 
-    --good-bg: #123a17;
+    --good-bg: #0f3b2a;
     --warning-bg: #3a2c0c;
     --serious-bg: #3d2318;
     --critical-bg: #3d1616;
-    --blue-bg: #142942;
-    --violet-bg: #26204a;
+    --blue-bg: #241b4a;
+    --violet-bg: #2e2352;
 
     --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.35);
     --shadow-lg: 0 8px 30px rgba(0,0,0,0.5);
@@ -86,7 +94,7 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, "Segoe UI", sans-serif;
     background: var(--page-plane);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
@@ -119,11 +127,11 @@
   .landing-card .icon { font-size: 34px; line-height: 1; }
   .landing-card .title { font-size: 19px; font-weight: 800; }
   .landing-card .desc { font-size: 12.5px; opacity: .92; line-height: 1.4; }
-  .landing-card.cfo { background: linear-gradient(135deg, #12b312, #0a7a0a); }
-  .landing-card.legal { background: linear-gradient(135deg, #5c49c9, #382d82); }
-  .landing-card.procurement { background: linear-gradient(135deg, #3987e5, #1c5cab); }
+  .landing-card.cfo { background: linear-gradient(135deg, #1eab63, #0c6b40); }
+  .landing-card.legal { background: linear-gradient(135deg, #241a4d, #120c2e); }
+  .landing-card.procurement { background: linear-gradient(135deg, #6b46f5, #4423d6); }
   .landing-card-wide {
-    border: 1px solid var(--border); background: var(--surface-1); border-radius: 16px;
+    border: 1px solid var(--border); background: var(--surface-1); border-radius: 18px;
     padding: 20px 22px; text-align: left; box-shadow: var(--shadow);
   }
   .landing-card-wide .head { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
@@ -151,7 +159,7 @@
   @media (max-width: 1000px) { .dash-grid { grid-template-columns: repeat(2, 1fr); } .dash-card { grid-column: span 2 !important; } }
   @media (max-width: 620px) { .dash-grid { grid-template-columns: 1fr; } .dash-card { grid-column: span 1 !important; } }
   .dash-card {
-    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px;
     padding: 18px 20px; box-shadow: var(--shadow);
   }
   .dash-card--half { grid-column: span 3; }
@@ -248,8 +256,8 @@
 
   .btn {
     border: 1px solid var(--border-strong); background: var(--surface-2);
-    color: var(--text-primary); border-radius: 8px; padding: 8px 14px;
-    font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-primary); border-radius: 999px; padding: 8px 16px;
+    font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
     transition: transform .08s ease, box-shadow .15s ease, background .15s ease;
   }
   .btn:hover { box-shadow: var(--shadow); }
@@ -259,7 +267,7 @@
   .btn.primary:hover { filter: brightness(1.05); }
   .btn.danger-outline { color: var(--critical); border-color: var(--critical); background: transparent; }
   .btn.subtle { border-color: transparent; background: transparent; color: var(--text-secondary); }
-  .btn.small { padding: 5px 9px; font-size: 12px; border-radius: 6px; }
+  .btn.small { padding: 5px 11px; font-size: 12px; border-radius: 999px; }
   .btn:disabled { opacity: .45; cursor: not-allowed; }
   input[type=file].hidden-file { display: none; }
 
@@ -277,7 +285,7 @@
   @media (max-width: 640px) { #dashKpis { grid-template-columns: repeat(2, 1fr); } }
   .kpi {
     background: var(--surface-1); border: 1px solid var(--border);
-    border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow);
+    border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow);
     position: relative; overflow: hidden;
   }
   .kpi .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px; }
@@ -472,7 +480,7 @@
   }
   .overlay[hidden] { display: none; }
   .modal {
-    background: var(--surface-1); color: var(--text-primary); border-radius: 14px;
+    background: var(--surface-1); color: var(--text-primary); border-radius: 18px;
     width: 100%; max-width: 740px; max-height: 88vh; overflow: auto;
     box-shadow: var(--shadow-lg); border: 1px solid var(--border);
   }
@@ -729,7 +737,7 @@
   }
   .focus-card {
     background: var(--surface-1); border: 1px solid var(--border); border-left: 5px solid var(--blue);
-    border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); cursor: pointer;
+    border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow); cursor: pointer;
     transition: box-shadow .15s ease, transform .1s ease;
   }
   .focus-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
