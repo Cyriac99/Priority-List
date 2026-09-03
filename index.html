@@ -510,6 +510,30 @@
     display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px;
     border-top: 1px solid var(--gridline); position: sticky; bottom: 0; background: var(--surface-1);
   }
+  /* Potential-duplicate warning (Procurement views only) — floats pinned just under the
+     modal header, since it can be triggered by the very first field (Vendor) while the
+     rest of the form (and the Save button) are still scrolled out of view below. Sticky
+     top keeps it in sight the whole time the form is being filled in, rather than only
+     being visible once you scroll all the way down to it. */
+  .dup-warning {
+    border: 1px solid var(--critical); background: var(--critical-bg); border-radius: 10px;
+    margin: 14px 20px 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+    position: sticky; top: 56px; z-index: 2; box-shadow: 0 6px 14px rgba(0,0,0,.12);
+  }
+  /* `top` is a fallback — JS sets it precisely to the rendered .modal-head height
+     (positionDupWarning() in app2.js) so it sits flush under the header rather than
+     overlapping it if that height ever differs from this estimate. */
+  .dup-warning[hidden] { display: none; }
+  .dup-warning-head { font-weight: 700; font-size: 13.5px; color: var(--critical); }
+  .dup-warning-sub { font-size: 12px; color: var(--text-secondary); margin-top: -4px; }
+  .dup-warning-list { display: flex; flex-direction: column; gap: 8px; }
+  .dup-match {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  }
+  .dup-match-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 700; font-size: 12.5px; }
+  .dup-match-desc { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+  .dup-match-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+  .dup-warning #dupConfirmBtn { align-self: flex-start; }
 
   /* ---------- Item Detail View (click a table row to see one contract, big and clear) ---------- */
   #itemDetailOverlay { z-index: 65; }
@@ -633,22 +657,76 @@
   }
 
   /* ---------- Focus View (presentation mode) ---------- */
-  .focusview { position: fixed; inset: 0; background: var(--page-plane); z-index: 60; overflow-y: auto; padding: 26px 32px 60px; }
+  .focusview { position: fixed; inset: 0; background: var(--page-plane); z-index: 60; overflow-y: auto; padding: 0; }
   .focusview[hidden] { display: none; }
+  /* Topbar and the priority quick-nav both float (position: sticky) at the top of the
+     Focus View's own scroll container, so the Exit button and a jump-to-section/count
+     indicator for each priority band stay reachable no matter how far a long list of
+     cards has been scrolled. */
   .focus-topbar {
+    position: sticky; top: 0; z-index: 6; background: var(--page-plane);
+    padding: 22px 32px 18px; border-bottom: 1px solid var(--gridline);
+  }
+  .focus-topbar-inner {
     display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
-    margin-bottom: 24px; flex-wrap: wrap; max-width: 1400px; margin-left: auto; margin-right: auto;
+    flex-wrap: wrap; max-width: 1400px; margin: 0 auto;
   }
   .focus-topbar h2 { margin: 0 0 4px; font-size: 23px; letter-spacing: -0.01em; }
   .focus-topbar p { margin: 0; color: var(--text-secondary); font-size: 13px; }
-  .focus-content { max-width: 1400px; margin: 0 auto; }
-  .focus-section { margin-bottom: 32px; }
+  .focus-topbar-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .focus-group-toggle {
+    display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
+    color: var(--text-secondary); cursor: pointer; user-select: none;
+  }
+  .focus-quicknav-row {
+    position: sticky; z-index: 5; background: var(--page-plane); border-bottom: 1px solid var(--gridline);
+    padding: 10px 32px;
+  }
+  .focus-quicknav-inner { display: flex; gap: 8px; flex-wrap: wrap; max-width: 1400px; margin: 0 auto; }
+  .focus-quicknav-inner button {
+    border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-primary);
+    border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 6px; transition: box-shadow .12s ease, background .12s ease;
+  }
+  .focus-quicknav-inner button:hover { background: var(--page-plane); box-shadow: var(--shadow); }
+  .focus-quicknav-inner button .fq-count {
+    background: var(--gridline); color: var(--text-secondary); border-radius: 999px; padding: 1px 8px; font-size: 11px;
+  }
+  .focus-content { max-width: 1400px; margin: 0 auto; padding: 22px 32px 60px; }
+  /* Each priority band ("week") is now its own boxed card, not just a bare heading
+     floating over the page background — makes the section boundaries obvious at a
+     glance, especially once cards are further split into per-owner sub-groups. */
+  .focus-section {
+    margin-bottom: 24px; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 22px; box-shadow: var(--shadow); scroll-margin-top: 150px;
+  }
+  /* The section label ("THIS WEEK 16", ...) floats too — sticky, pinned right below the
+     topbar/quick-nav for as long as that section's cards are still scrolling past, so
+     you always know which priority band you're looking at without scrolling back up.
+     Negative margins expand it to the box's own edges (so it fully covers card content
+     scrolling underneath, with no gap at the sides) and matching top corners keep it
+     looking like part of the same card rather than a separate floating strip. `top` is
+     a fallback — JS sets it precisely (positionFocusSectionHeads() below) to the real
+     rendered topbar+quicknav height. */
   .focus-section h3 {
+    position: sticky; top: 92px; z-index: 3; background: var(--surface-1);
     font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
-    border-bottom: 1px solid var(--gridline); padding-bottom: 10px; margin: 0 0 16px;
+    border-bottom: 1px solid var(--gridline); margin: -20px -22px 16px; padding: 20px 22px 10px;
+    border-radius: 14px 14px 0 0;
     display: flex; align-items: center; gap: 10px;
   }
   .focus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  /* "Group by Procurement" mode: one sub-group per owner inside a priority section. */
+  .focus-owner-group { margin-bottom: 22px; }
+  .focus-owner-group:last-child { margin-bottom: 0; }
+  .focus-owner-head {
+    font-size: 13.5px; font-weight: 800; margin: 0 0 10px; color: var(--text-primary);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .focus-owner-head .fo-count {
+    background: var(--blue-bg); color: var(--blue); border-radius: 999px;
+    font-size: 11px; font-weight: 700; padding: 1px 8px;
+  }
   .focus-card {
     background: var(--surface-1); border: 1px solid var(--border); border-left: 5px solid var(--blue);
     border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); cursor: pointer;
@@ -935,6 +1013,7 @@
       <div class="msfilter" id="f-exco"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
       <div class="msfilter" id="f-legal"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
       <div class="msfilter" id="f-pending"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
+      <div class="msfilter" id="f-pendingVendor"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
       <button class="btn small subtle" id="clearFilters">Clear filters</button>
       <button class="btn small subtle" id="pinToggleBtn" title="Freeze the Vendor and Actions columns while scrolling sideways">📌 Pin columns</button>
       <button class="btn small primary" id="focusViewBtn" title="Big, presentation-friendly view of the contracts currently shown">🔎 Focus View</button>
@@ -1019,6 +1098,12 @@
       <h2 id="modalTitle">Add contract</h2>
       <button class="btn icon-only subtle" id="modalClose">✕</button>
     </div>
+    <div class="dup-warning" id="dupWarning" hidden>
+      <div class="dup-warning-head">⚠️ Possible duplicate contract<span id="dupWarningCount"></span> for this vendor</div>
+      <div class="dup-warning-sub">Matched on the same vendor plus a close value or clearly similar scope — review before saving.</div>
+      <div class="dup-warning-list" id="dupWarningList"></div>
+      <button type="button" class="btn small subtle" id="dupConfirmBtn">Not a duplicate — save anyway</button>
+    </div>
     <form id="modalForm">
       <div class="modal-body">
         <div class="field"><label>Vendor name</label><input id="m-vendor" required></div>
@@ -1062,6 +1147,9 @@
           <label>Legal action</label>
           <div class="static-value" id="m-legalActionStatus"></div>
           <div class="hint">Set only via the "Mark completed" action on the contract — not editable here.</div>
+        </div>
+        <div class="field"><label>Pending action from vendor?</label>
+          <select id="m-pendingVendor"><option value="">—</option><option>Yes</option><option>No</option></select>
         </div>
         <div class="field full">
           <label>Legal comments</label>
@@ -1145,11 +1233,22 @@
 
 <div class="focusview" id="focusView" hidden>
   <div class="focus-topbar">
-    <div>
-      <h2>Contract Priority List — Focus View</h2>
-      <p id="focusSubtitle"></p>
+    <div class="focus-topbar-inner">
+      <div>
+        <h2>Contract Priority List — Focus View</h2>
+        <p id="focusSubtitle"></p>
+      </div>
+      <div class="focus-topbar-actions">
+        <label class="focus-group-toggle">
+          <input type="checkbox" id="focusGroupToggle">
+          <span>Group by Procurement</span>
+        </label>
+        <button class="btn primary" id="exitFocusBtn">✕ Exit Focus View</button>
+      </div>
     </div>
-    <button class="btn primary" id="exitFocusBtn">✕ Exit Focus View</button>
+  </div>
+  <div class="focus-quicknav-row" id="focusQuickNavRow">
+    <div class="focus-quicknav-inner" id="focusQuickNav"></div>
   </div>
   <div class="focus-content" id="focusBody"></div>
 </div>
@@ -8098,12 +8197,14 @@ let state = {
   view: null,        // { type: 'cfo'|'legal'|'procurement-all'|'procurement-individual', person }
   // Each of these (besides search) is an array of selected values — an empty array
   // means "no restriction" (everything shown), matching how the old "All ___" option worked.
-  filters: { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [] },
+  filters: { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [], pendingVendor: [] },
   closedFilters: { search: '', source: 'all' },
   logFilters: { search: '' },
   sort: { key: 'priority', dir: 'asc' },
   editingId: null,
   pinColumns: true, // freezes Vendor + Actions columns while scrolling the wide table sideways
+  dupConfirmed: false, // set once the user clicks "Save anyway" on a potential-duplicate warning in the Add/Edit modal
+  focusGroupBySpoc: false, // Focus View: group each priority section by procurement owner (persists across opens)
 
   // ---- Project Tracker (Procurement-only Trello-style board) ----
   projects: [],              // task cards: { id, title, notes, assignee, column, dueDate, recurrence, linkedContractId, seriesId, createdAt, completedAt }
@@ -8122,6 +8223,7 @@ function rowToItem(r) {
     kissflow: r.kissflow || '', expiry: r.expiry, status: r.status, procurement: r.procurement || '',
     exco: r.exco || '', responsible: r.responsible || '', legal: r.legal || '',
     legalComments: r.legal_comments || '', pendingLegal: r.pending_legal || '',
+    pendingVendor: r.pending_vendor || '',
     dateSentToLegal: r.date_sent_to_legal, legalCompleted: r.legal_completed || '',
     legalCompletedDate: r.legal_completed_date, comments: r.comments || '',
     source: r.source || 'priority_list', closedDate: r.closed_date,
@@ -8133,6 +8235,7 @@ function itemToRow(item) {
     description: item.description, renewal: item.renewal || null, tcv: item.tcv,
     tcv_raw: item.tcvRaw != null ? String(item.tcvRaw) : null,
     kissflow: item.kissflow || null, expiry: item.expiry || null, status: item.status,
+    pending_vendor: item.pendingVendor || null,
     procurement: item.procurement || null, exco: item.exco || null, responsible: item.responsible || null,
     legal: item.legal || null, legal_comments: item.legalComments || null, pending_legal: item.pendingLegal || null,
     date_sent_to_legal: item.dateSentToLegal || null, legal_completed: item.legalCompleted || null,
@@ -8208,7 +8311,7 @@ function pushProjectDelete(id) {
 
 function loadSeedLocal() {
   state.items = [];
-  const defaults = { dateSentToLegal: null, renewal: '', legalCompleted: '', legalCompletedDate: null };
+  const defaults = { dateSentToLegal: null, renewal: '', legalCompleted: '', legalCompletedDate: null, pendingVendor: '' };
   SEED.active.forEach(r => state.items.push(Object.assign({}, defaults, r)));
   SEED.closed.forEach(r => state.items.push(Object.assign({}, defaults, r)));
   state.log = [{
@@ -8480,6 +8583,7 @@ const FILTER_DEFS = {
   exco:        { name: 'ExCo',          placeholder: 'All ExCo',            options: () => (state.lists.exco || []).map(v => ({ value: v, label: v })) },
   legal:       { name: 'Legal',         placeholder: 'All legal',           options: () => (state.lists.legal || []).map(v => ({ value: v, label: v })) },
   pending:     { name: 'Pending legal', placeholder: 'Pending legal: all',  options: () => [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] },
+  pendingVendor: { name: 'Pending vendor', placeholder: 'Pending vendor: all', options: () => [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] },
 };
 
 function msFilterButtonLabel(key) {
@@ -8601,6 +8705,10 @@ function matchesActiveFilters(item) {
     const pv = (item.pendingLegal || '').toLowerCase() || 'no';
     if (!f.pending.includes(pv)) return false;
   }
+  if (f.pendingVendor.length) {
+    const pvv = (item.pendingVendor || '').toLowerCase() || 'no';
+    if (!f.pendingVendor.includes(pvv)) return false;
+  }
   if (f.search) {
     const hay = [item.vendor, item.description, item.comments, item.legalComments, item.responsible].join(' ').toLowerCase();
     if (!hay.includes(f.search.toLowerCase())) return false;
@@ -8657,6 +8765,7 @@ const ACTIVE_COLS = [
   { key: 'legal', label: 'Legal' },
   { key: 'legalComments', label: 'Legal Comments' },
   { key: 'pendingLegal', label: 'Pending Legal' },
+  { key: 'pendingVendor', label: 'Pending Vendor' },
   { key: 'legalCompleted', label: 'Legal Action' },
   { key: 'dateSentToLegal', label: 'Date Sent to Legal' },
   { key: 'comments', label: 'Comments' },
@@ -8720,6 +8829,7 @@ function renderActive() {
         <td>${esc(item.legal) || '<span class="muted-cell">—</span>'}</td>
         <td class="legal-comments">${clampWrap(item.legalComments)}</td>
         <td>${pendingCell(item.pendingLegal)}</td>
+        <td>${pendingCell(item.pendingVendor)}</td>
         ${showLegalAction ? `<td>${legalActionCell(item, legalView)}</td>` : ''}
         <td>${dateSentCell(item)}</td>
         <td class="comments">${clampWrap(item.comments)}</td>
@@ -9147,6 +9257,7 @@ function focusCardBodyHTML(item) {
   const meta = [];
   if ((item.renewal || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-blue">Renewal</span>');
   if ((item.pendingLegal || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-critical">Pending Legal</span>');
+  if ((item.pendingVendor || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-warning">Pending Vendor</span>');
   if (item.status === 'ONHOLD') meta.push(statusBadge(item.status));
   meta.push(`<span>Procurement: ${esc(item.procurement) || '—'}</span>`);
   meta.push(`<span>ExCo: ${esc(item.exco) || '—'}</span>`);
@@ -9194,38 +9305,87 @@ function focusMergedCardHTML(vendor, items) {
       ${subItems}
     </div>`;
 }
+// Groups a set of items by vendor into merged cards (a blank vendor never merges with
+// another blank one) — the base rendering both the plain layout and each procurement
+// owner's own sub-group (below) build on.
+function focusVendorCardsHTML(items) {
+  const byVendor = new Map();
+  items.forEach(item => {
+    const key = (item.vendor || '').trim().toLowerCase() || `__id_${item.id}`;
+    if (!byVendor.has(key)) byVendor.set(key, []);
+    byVendor.get(key).push(item);
+  });
+  const cards = [...byVendor.values()]
+    .map(vendorItems => vendorItems.length > 1 ? focusMergedCardHTML(vendorItems[0].vendor, vendorItems) : focusCardHTML(vendorItems[0]))
+    .join('');
+  return `<div class="focus-grid">${cards}</div>`;
+}
+function focusOwnerLabel(v) { return (v && v.trim()) ? v.trim() : 'Unassigned'; }
+// "Group by Procurement" mode: within a priority section, contracts are bucketed by
+// procurement owner first (alphabetically, blank/unassigned last) so each SPOC's own
+// contracts sit together — same-vendor contracts still merge into one card, but only
+// within that owner's own bucket.
+function focusOwnerSectionsHTML(items) {
+  const byOwner = new Map();
+  items.forEach(item => {
+    const key = focusOwnerLabel(item.procurement);
+    if (!byOwner.has(key)) byOwner.set(key, []);
+    byOwner.get(key).push(item);
+  });
+  const owners = [...byOwner.keys()].sort((a, b) => {
+    if (a === 'Unassigned') return 1;
+    if (b === 'Unassigned') return -1;
+    return a.localeCompare(b);
+  });
+  return owners.map(owner => `
+    <div class="focus-owner-group">
+      <h4 class="focus-owner-head">${esc(owner)} <span class="fo-count">${byOwner.get(owner).length}</span></h4>
+      ${focusVendorCardsHTML(byOwner.get(owner))}
+    </div>`).join('');
+}
 function openFocusView() {
   const { filtered } = visibleActiveItems();
   const subtitleView = viewLabel() || 'All contracts';
   document.getElementById('focusSubtitle').textContent =
     `${subtitleView} — ${filtered.length} contract${filtered.length === 1 ? '' : 's'}, sorted by priority.`;
+  document.getElementById('focusGroupToggle').checked = state.focusGroupBySpoc;
+
+  const groups = [1, 2, 3, 4]
+    .map(p => ({ p, items: filtered.filter(i => i.priority === p) }))
+    .filter(g => g.items.length);
+
+  // Quick-nav: one floating pill per priority band actually present, jumping straight
+  // to that section — the "this week / next week indicator" row that stays visible
+  // (sticky, right below the topbar) no matter how far the card list is scrolled.
+  const nav = document.getElementById('focusQuickNav');
+  nav.innerHTML = groups.map(g => `
+    <button type="button" data-jump="focus-p${g.p}">${esc(PRIORITY_META[g.p].label)} <span class="fq-count">${g.items.length}</span></button>`).join('');
+  document.getElementById('focusQuickNavRow').hidden = !groups.length;
+
   const body = document.getElementById('focusBody');
   if (!filtered.length) {
     body.innerHTML = `<div class="focus-empty">No contracts match the current view/filters.</div>`;
   } else {
-    const groups = [1, 2, 3, 4]
-      .map(p => ({ p, items: filtered.filter(i => i.priority === p) }))
-      .filter(g => g.items.length);
     body.innerHTML = groups.map(g => {
-      // Group this priority band's contracts by vendor so same-vendor ones can be
-      // shown together — a blank vendor never merges with another blank one.
-      const byVendor = new Map();
-      g.items.forEach(item => {
-        const key = (item.vendor || '').trim().toLowerCase() || `__id_${item.id}`;
-        if (!byVendor.has(key)) byVendor.set(key, []);
-        byVendor.get(key).push(item);
-      });
-      const cards = [...byVendor.values()]
-        .map(vendorItems => vendorItems.length > 1 ? focusMergedCardHTML(vendorItems[0].vendor, vendorItems) : focusCardHTML(vendorItems[0]))
-        .join('');
+      const sectionHTML = state.focusGroupBySpoc ? focusOwnerSectionsHTML(g.items) : focusVendorCardsHTML(g.items);
       return `
-      <div class="focus-section">
+      <div class="focus-section" id="focus-p${g.p}">
         <h3>${esc(PRIORITY_META[g.p].label)} <span class="badge ${PRIORITY_META[g.p].cls}">${g.items.length}</span></h3>
-        <div class="focus-grid">${cards}</div>
+        ${sectionHTML}
       </div>`;
     }).join('');
   }
   document.getElementById('focusView').hidden = false;
+  // The quick-nav row floats directly below the topbar, and each section's own label
+  // ("THIS WEEK 16", ...) floats directly below that — measure the real rendered
+  // heights (they wrap at narrow widths) rather than hardcoding offsets.
+  requestAnimationFrame(() => {
+    const topbarH = document.querySelector('.focus-topbar').offsetHeight;
+    const navRow = document.getElementById('focusQuickNavRow');
+    navRow.style.top = topbarH + 'px';
+    const navH = navRow.hidden ? 0 : navRow.offsetHeight;
+    document.querySelectorAll('.focus-section h3').forEach(h => { h.style.top = (topbarH + navH) + 'px'; });
+  });
 }
 function closeFocusView() { document.getElementById('focusView').hidden = true; }
 
@@ -9237,6 +9397,7 @@ function itemDetailHTML(item) {
   const badges = [priorityBadge(item.priority), statusBadge(item.status)];
   if ((item.renewal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-blue">Renewal</span>');
   if ((item.pendingLegal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-critical">Pending Legal</span>');
+  if ((item.pendingVendor || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-warning">Pending Vendor</span>');
 
   const legalView = !!(state.view && state.view.type === 'legal');
   const showLegalAction = legalView || isProcurementView();
@@ -9265,6 +9426,7 @@ function itemDetailHTML(item) {
       ${field('Legal', esc(item.legal))}
       ${field('Pending Legal', pendingCell(item.pendingLegal))}
       ${field('Date Sent to Legal', dateSentCell(item))}
+      ${field('Pending Vendor', pendingCell(item.pendingVendor))}
       ${showLegalAction ? field('Legal Action', legalActionCell(item, legalView)) : ''}
       ${field('PR on Kissflow', esc(item.kissflow))}
     </div>
@@ -9323,7 +9485,8 @@ function diffRecord(oldR, newR) {
     ['status', 'Status', v => (STATUS_META[v]||{}).label || v],
     ['kissflow', 'Kissflow'], ['procurement', 'Procurement'], ['exco', 'ExCo'],
     ['responsible', 'Responsible'], ['legal', 'Legal'], ['legalComments', 'Legal comments'],
-    ['pendingLegal', 'Pending legal'], ['dateSentToLegal', 'Date sent to legal', v => v || '—'], ['comments', 'Comments'],
+    ['pendingLegal', 'Pending legal'], ['dateSentToLegal', 'Date sent to legal', v => v || '—'],
+    ['pendingVendor', 'Pending vendor'], ['comments', 'Comments'],
   ];
   const diffs = [];
   fields.forEach(([key, label, fmt]) => {
@@ -9420,6 +9583,107 @@ function deleteItem(item) {
   toast('Contract deleted');
 }
 
+// ============ Potential duplicate detection (Procurement views only) ============
+// Flags a contract being entered/edited as a possible duplicate when it shares its
+// vendor name with an existing OPEN contract AND either the contract value is close
+// or the scope/description reads as clearly similar. Vendor name alone isn't used as
+// the trigger — this list has plenty of vendors that legitimately carry several
+// separate contracts (Dicetek, Concentrix, Moodys, ...), so that alone would flag
+// constantly and train people to ignore the warning.
+function normalizeVendor(v) { return (v || '').trim().toLowerCase(); }
+const DUP_STOPWORDS = new Set([
+  'the','and','for','with','of','to','a','an','in','on','or','is','are','this','that','from','at','by',
+  // Domain-generic contract words: common across many unrelated vendors/scopes in this
+  // list (renewal admin, office space, generic service terms) — left in, they'd inflate
+  // similarity between genuinely different contracts that just share paperwork language.
+  'renewal','renewals','office','wio','tool','dubai','extension','extensions','contract','contracts',
+  'compliance','review','addendum','resource','resources','banking','risk','team','additional',
+  'business','insurance','services','service','agency','amc','cbuae','license','licenses','letter',
+  'space','consultancy','fee','fees','poc','platform','data','financial','securities','credit','system',
+  'requirement','requirements','support','agreement','agreements','subscription','subscriptions',
+  'year','years','annual','month','months','monthly','yearly','new','existing',
+]);
+function descWords(s) {
+  return new Set(String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 2 && !DUP_STOPWORDS.has(w)));
+}
+// Jaccard similarity over normalized word sets — simple, dependency-free, and good
+// enough to catch "same scope, reworded" without any NLP library.
+function descSimilarity(a, b) {
+  const wa = descWords(a), wb = descWords(b);
+  if (!wa.size || !wb.size) return 0;
+  let inter = 0;
+  wa.forEach(w => { if (wb.has(w)) inter++; });
+  return inter / (wa.size + wb.size - inter);
+}
+function valuesClose(a, b) {
+  if (a == null || b == null || isNaN(a) || isNaN(b)) return false;
+  if (a === 0 && b === 0) return true;
+  return Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1) <= 0.15; // within ~15%
+}
+const DUP_SCOPE_THRESHOLD = 0.3;
+// `excludeId` keeps an existing contract from flagging itself while it's being edited.
+// Only checks OPEN/ON HOLD contracts — the "To Be Signed" pipeline — not the signed/
+// closed archive.
+function findPotentialDuplicates(candidate, excludeId) {
+  const cVendor = normalizeVendor(candidate.vendor);
+  if (!cVendor) return [];
+  const cTcv = candidate.tcv === '' || candidate.tcv == null || isNaN(candidate.tcv) ? null : Number(candidate.tcv);
+  return state.items
+    .filter(i => i.id !== excludeId && i.status !== 'CLOSED' && normalizeVendor(i.vendor) === cVendor)
+    .map(i => ({ item: i, valClose: valuesClose(cTcv, i.tcv), scopeSim: descSimilarity(candidate.description, i.description) }))
+    .filter(m => m.valClose || m.scopeSim >= DUP_SCOPE_THRESHOLD)
+    .sort((a, b) => (b.valClose - a.valClose) || (b.scopeSim - a.scopeSim));
+}
+// Keeps the floating warning banner flush under the modal header rather than
+// overlapping it — measures the real rendered header height instead of trusting the
+// CSS fallback, since header height can vary slightly with content/zoom/theme.
+function positionDupWarning() {
+  const box = document.getElementById('dupWarning');
+  const head = document.querySelector('#modalOverlay .modal-head');
+  if (!box || !head) return;
+  requestAnimationFrame(() => { box.style.top = head.offsetHeight + 'px'; });
+}
+function renderDupWarning(matches) {
+  const box = document.getElementById('dupWarning');
+  const list = document.getElementById('dupWarningList');
+  if (!box) return;
+  if (!matches.length) { box.hidden = true; list.innerHTML = ''; return; }
+  box.hidden = false;
+  positionDupWarning();
+  document.getElementById('dupWarningCount').textContent = matches.length === 1 ? '' : `s (${matches.length})`;
+  list.innerHTML = matches.map(m => {
+    const i = m.item;
+    const meta = (STATUS_META[i.status] || {});
+    return `
+      <div class="dup-match">
+        <div class="dup-match-head">
+          <span class="dup-match-vendor">${esc(i.vendor)}</span>
+          <span class="badge ${meta.cls || ''}">${meta.label || esc(i.status)}</span>
+        </div>
+        <div class="dup-match-desc">${esc(i.description) || '<span class="muted-cell">—</span>'}</div>
+        <div class="dup-match-meta">
+          <span>Value: ${fmtCurrency(i.tcv).replace(/<[^>]+>/g, '') || '—'}</span>
+          <span>ExCo: ${esc(i.exco) || '—'}</span>
+          <span>Responsible: ${esc(i.responsible) || '—'}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+// Re-run on every relevant field's blur, and once whenever the modal opens. Only
+// applies in Procurement views — CFO/Legal editing the same contract don't get this,
+// per how it was scoped: flagging *Procurement* while *they're* entering a contract.
+function checkForDuplicates() {
+  if (!isProcurementView()) { renderDupWarning([]); return []; }
+  const candidate = {
+    vendor: document.getElementById('m-vendor').value,
+    description: document.getElementById('m-description').value,
+    tcv: document.getElementById('m-tcv').value,
+  };
+  const matches = findPotentialDuplicates(candidate, state.editingId);
+  renderDupWarning(matches);
+  return matches;
+}
+
 // ============ Modal ============
 function openModal(item) {
   state.editingId = item ? item.id : null;
@@ -9445,6 +9709,7 @@ function openModal(item) {
   document.getElementById('m-pendingLegal').value = item ? item.pendingLegal : '';
   document.getElementById('m-dateSentToLegal').value = item && item.dateSentToLegal ? item.dateSentToLegal : '';
   updateDateSentEnabled();
+  document.getElementById('m-pendingVendor').value = item ? item.pendingVendor : '';
 
   // Legal Comments is Legal's own input — Procurement can see it, but not edit it here.
   // A read-only "Legal action" status line (completed/pending) sits alongside it so
@@ -9461,6 +9726,8 @@ function openModal(item) {
 
   document.getElementById('m-comments').value = item ? item.comments : '';
   applyFieldRequirements();
+  state.dupConfirmed = false;
+  checkForDuplicates();
   document.getElementById('modalOverlay').hidden = false;
 }
 function updateDateSentEnabled() {
@@ -9478,7 +9745,7 @@ function updateDateSentEnabled() {
 // keeps the original, looser rules (just Vendor + Description), unchanged.
 const PROCUREMENT_MANDATORY_IDS = [
   'm-priority', 'm-renewal', 'm-status', 'm-kissflow', 'm-procurement',
-  'm-exco', 'm-responsible', 'm-legal', 'm-pendingLegal', 'm-comments',
+  'm-exco', 'm-responsible', 'm-legal', 'm-pendingLegal', 'm-pendingVendor', 'm-comments',
 ];
 function applyFieldRequirements() {
   const mandatory = isProcurementView();
@@ -9501,6 +9768,14 @@ function onModalSubmit(e) {
   const vendor = document.getElementById('m-vendor').value.trim();
   const description = document.getElementById('m-description').value.trim();
   if (!vendor || !description) { toast('Vendor and description are required'); return; }
+  // Hard block: a potential duplicate stops the save until it's either resolved (change
+  // a field so it no longer matches) or explicitly overridden via "Save anyway" below,
+  // which sets dupConfirmed and re-submits this same form.
+  if (!state.dupConfirmed && checkForDuplicates().length) {
+    document.getElementById('dupWarning').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    toast('Possible duplicate contract — review below, or confirm to save anyway');
+    return;
+  }
   const tcvRaw = document.getElementById('m-tcv').value;
   const rec = {
     vendor, description,
@@ -9518,6 +9793,7 @@ function onModalSubmit(e) {
     legal: document.getElementById('m-legal').value.trim(),
     pendingLegal: document.getElementById('m-pendingLegal').value,
     dateSentToLegal: document.getElementById('m-pendingLegal').value === 'Yes' ? (document.getElementById('m-dateSentToLegal').value || null) : null,
+    pendingVendor: document.getElementById('m-pendingVendor').value,
     legalComments: document.getElementById('m-legalComments').value.trim(),
     comments: document.getElementById('m-comments').value.trim(),
   };
@@ -9545,6 +9821,7 @@ function onModalSubmit(e) {
     pushContractRow(newItem);
     toast('Contract added');
   }
+  state.dupConfirmed = false;
   closeModal();
   renderAll();
   // If this edit was made from Focus View (clicking a card opens this same modal on top
@@ -9718,11 +9995,11 @@ function exportCSV() {
     cols = ['Vendor', 'Description', 'Renewal Contract', 'Yearly TCV', 'Status', 'Source', 'Procurement', 'ExCo', 'Legal', 'Comments', 'Closed Date'];
     rows = visibleClosedItems().filtered.map(i => [i.vendor, i.description, i.renewal || '', i.tcv ?? '', STATUS_META.CLOSED.label, i.source === 'archive' ? 'Archive' : 'This cycle', i.procurement, i.exco, i.legal, i.comments, i.closedDate || '']);
   } else {
-    cols = ['Priority', 'Vendor', 'Description', 'Renewal Contract', 'Yearly TCV', 'Expiry', 'Status', 'Procurement', 'ExCo', 'Responsible', 'Legal', 'Pending Legal', 'Legal Action Completed', 'Date Sent to Legal', 'Legal Comments', 'Comments'];
+    cols = ['Priority', 'Vendor', 'Description', 'Renewal Contract', 'Yearly TCV', 'Expiry', 'Status', 'Procurement', 'ExCo', 'Responsible', 'Legal', 'Pending Legal', 'Legal Action Completed', 'Date Sent to Legal', 'Pending Vendor', 'Legal Comments', 'Comments'];
     rows = visibleActiveItems().filtered.map(i => [
       (PRIORITY_META[i.priority] || {}).label || i.priority, i.vendor, i.description, i.renewal || '', i.tcv ?? '', i.expiry || '',
       (STATUS_META[i.status] || {}).label || i.status, i.procurement, i.exco, i.responsible, i.legal,
-      i.pendingLegal || '', i.legalCompleted || '', i.dateSentToLegal || '', i.legalComments, i.comments,
+      i.pendingLegal || '', i.legalCompleted || '', i.dateSentToLegal || '', i.pendingVendor || '', i.legalComments, i.comments,
     ]);
   }
   const csv = [cols.join(',')].concat(rows.map(r => r.map(csvEscape).join(','))).join('\r\n');
@@ -9748,6 +10025,7 @@ function importData(file) {
         if (i.renewal === undefined) i.renewal = '';
         if (i.legalCompleted === undefined) i.legalCompleted = '';
         if (i.legalCompletedDate === undefined) i.legalCompletedDate = null;
+        if (i.pendingVendor === undefined) i.pendingVendor = '';
       });
       state.log = payload.log || state.log;
       if (payload.lists) state.lists = payload.lists; else initLists();
@@ -9796,7 +10074,7 @@ function viewLabel() {
 // wants to check on them. Pulled out of selectView so chart clicks (goToFilteredTable)
 // can rebuild the same OPEN-only base without duplicating this list.
 function applyViewDefaultFilters(type, person) {
-  state.filters = { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [] };
+  state.filters = { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [], pendingVendor: [] };
   if (type === 'cfo') state.filters.priority = ['2', '3'];
   if (type === 'legal') state.filters.pending = ['yes'];
   if (type === 'procurement-individual') state.filters.procurement = [person];
@@ -10095,6 +10373,17 @@ async function boot() {
   });
   document.getElementById('m-renewal').addEventListener('change', updateExpiryRequired);
 
+  // Potential-duplicate check: re-runs live as the three fields it looks at lose focus,
+  // and again (via the button below) when someone explicitly overrides a flagged match.
+  ['m-vendor', 'm-tcv', 'm-description'].forEach(id => {
+    document.getElementById(id).addEventListener('blur', checkForDuplicates);
+  });
+  document.getElementById('dupConfirmBtn').addEventListener('click', () => {
+    state.dupConfirmed = true;
+    document.getElementById('dupWarning').hidden = true;
+    document.getElementById('modalForm').requestSubmit();
+  });
+
   document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
   document.getElementById('backupBtn').addEventListener('click', exportBackup);
   document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
@@ -10128,7 +10417,7 @@ async function boot() {
     renderActive();
   });
   document.getElementById('clearFilters').addEventListener('click', () => {
-    state.filters = { search: '', priority: [], status: [], renewal: [], procurement: [], exco: [], legal: [], pending: [] };
+    state.filters = { search: '', priority: [], status: [], renewal: [], procurement: [], exco: [], legal: [], pending: [], pendingVendor: [] };
     // An individual procurement view stays locked to its person even after clearing —
     // its Procurement filter is hidden precisely because it must never change here.
     if (state.view && state.view.type === 'procurement-individual') state.filters.procurement = [state.view.person];
@@ -10145,6 +10434,16 @@ async function boot() {
     if (!card) return;
     const item = state.items.find(i => i.id === card.dataset.id);
     if (item) openModal(item);
+  });
+  document.getElementById('focusGroupToggle').addEventListener('change', e => {
+    state.focusGroupBySpoc = e.target.checked;
+    openFocusView();
+  });
+  document.getElementById('focusQuickNav').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-jump]');
+    if (!btn) return;
+    const target = document.getElementById(btn.dataset.jump);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   const pinBtn = document.getElementById('pinToggleBtn');
