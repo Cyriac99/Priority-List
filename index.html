@@ -826,6 +826,13 @@
   .task-card.dragging { opacity: .4; }
   .task-card.done .task-title { text-decoration: line-through; color: var(--muted); }
   .task-title { font-size: 13px; font-weight: 700; margin: 0 0 6px; line-height: 1.35; }
+  /* Task description ("Notes" in the modal) — clamped to 3 lines so a long note
+     doesn't blow out the card height; the full text is always still visible via Edit. */
+  .task-desc {
+    font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin: 0 0 8px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .task-card.done .task-desc { color: var(--muted); }
   .task-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .task-chip {
     display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
@@ -1022,6 +1029,7 @@
       <div class="msfilter" id="f-legal"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
       <div class="msfilter" id="f-pending"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
       <div class="msfilter" id="f-pendingVendor"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
+      <div class="msfilter" id="f-pendingDocusign"><button type="button" class="msfilter-btn"></button><div class="msfilter-panel" hidden></div></div>
       <button class="btn small subtle" id="clearFilters">Clear filters</button>
       <button class="btn small subtle" id="pinToggleBtn" title="Freeze the Vendor and Actions columns while scrolling sideways">📌 Pin columns</button>
       <button class="btn small primary" id="focusViewBtn" title="Big, presentation-friendly view of the contracts currently shown">🔎 Focus View</button>
@@ -1158,6 +1166,9 @@
         </div>
         <div class="field"><label>Pending action from vendor?</label>
           <select id="m-pendingVendor"><option value="">—</option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="field"><label>Pending DocuSign?</label>
+          <select id="m-pendingDocusign"><option value="">—</option><option>Yes</option><option>No</option></select>
         </div>
         <div class="field full">
           <label>Legal comments</label>
@@ -8205,7 +8216,7 @@ let state = {
   view: null,        // { type: 'cfo'|'legal'|'procurement-all'|'procurement-individual', person }
   // Each of these (besides search) is an array of selected values — an empty array
   // means "no restriction" (everything shown), matching how the old "All ___" option worked.
-  filters: { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [], pendingVendor: [] },
+  filters: { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [], pendingVendor: [], pendingDocusign: [] },
   closedFilters: { search: '', source: 'all' },
   logFilters: { search: '' },
   sort: { key: 'priority', dir: 'asc' },
@@ -8232,6 +8243,7 @@ function rowToItem(r) {
     exco: r.exco || '', responsible: r.responsible || '', legal: r.legal || '',
     legalComments: r.legal_comments || '', pendingLegal: r.pending_legal || '',
     pendingVendor: r.pending_vendor || '',
+    pendingDocusign: r.pending_docusign || '',
     dateSentToLegal: r.date_sent_to_legal, legalCompleted: r.legal_completed || '',
     legalCompletedDate: r.legal_completed_date, comments: r.comments || '',
     source: r.source || 'priority_list', closedDate: r.closed_date,
@@ -8244,6 +8256,7 @@ function itemToRow(item) {
     tcv_raw: item.tcvRaw != null ? String(item.tcvRaw) : null,
     kissflow: item.kissflow || null, expiry: item.expiry || null, status: item.status,
     pending_vendor: item.pendingVendor || null,
+    pending_docusign: item.pendingDocusign || null,
     procurement: item.procurement || null, exco: item.exco || null, responsible: item.responsible || null,
     legal: item.legal || null, legal_comments: item.legalComments || null, pending_legal: item.pendingLegal || null,
     date_sent_to_legal: item.dateSentToLegal || null, legal_completed: item.legalCompleted || null,
@@ -8319,7 +8332,7 @@ function pushProjectDelete(id) {
 
 function loadSeedLocal() {
   state.items = [];
-  const defaults = { dateSentToLegal: null, renewal: '', legalCompleted: '', legalCompletedDate: null, pendingVendor: '' };
+  const defaults = { dateSentToLegal: null, renewal: '', legalCompleted: '', legalCompletedDate: null, pendingVendor: '', pendingDocusign: '' };
   SEED.active.forEach(r => state.items.push(Object.assign({}, defaults, r)));
   SEED.closed.forEach(r => state.items.push(Object.assign({}, defaults, r)));
   state.log = [{
@@ -8592,6 +8605,7 @@ const FILTER_DEFS = {
   legal:       { name: 'Legal',         placeholder: 'All legal',           options: () => (state.lists.legal || []).map(v => ({ value: v, label: v })) },
   pending:     { name: 'Pending legal', placeholder: 'Pending legal: all',  options: () => [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] },
   pendingVendor: { name: 'Pending vendor', placeholder: 'Pending vendor: all', options: () => [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] },
+  pendingDocusign: { name: 'Pending DocuSign', placeholder: 'Pending DocuSign: all', options: () => [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] },
 };
 
 function msFilterButtonLabel(key) {
@@ -8717,6 +8731,10 @@ function matchesActiveFilters(item) {
     const pvv = (item.pendingVendor || '').toLowerCase() || 'no';
     if (!f.pendingVendor.includes(pvv)) return false;
   }
+  if (f.pendingDocusign.length) {
+    const pvd = (item.pendingDocusign || '').toLowerCase() || 'no';
+    if (!f.pendingDocusign.includes(pvd)) return false;
+  }
   if (f.search) {
     const hay = [item.vendor, item.description, item.comments, item.legalComments, item.responsible].join(' ').toLowerCase();
     if (!hay.includes(f.search.toLowerCase())) return false;
@@ -8774,6 +8792,7 @@ const ACTIVE_COLS = [
   { key: 'legalComments', label: 'Legal Comments' },
   { key: 'pendingLegal', label: 'Pending Legal' },
   { key: 'pendingVendor', label: 'Pending Vendor' },
+  { key: 'pendingDocusign', label: 'Pending DocuSign' },
   { key: 'legalCompleted', label: 'Legal Action' },
   { key: 'dateSentToLegal', label: 'Date Sent to Legal' },
   { key: 'comments', label: 'Comments' },
@@ -8838,6 +8857,7 @@ function renderActive() {
         <td class="legal-comments">${clampWrap(item.legalComments)}</td>
         <td>${pendingCell(item.pendingLegal)}</td>
         <td>${pendingCell(item.pendingVendor)}</td>
+        <td>${pendingCell(item.pendingDocusign)}</td>
         ${showLegalAction ? `<td>${legalActionCell(item, legalView)}</td>` : ''}
         <td>${dateSentCell(item)}</td>
         <td class="comments">${clampWrap(item.comments)}</td>
@@ -9137,6 +9157,7 @@ function taskCardHTML(t) {
   return `
     <div class="task-card${t.column === 'done' ? ' done' : ''}" draggable="true" data-id="${t.id}">
       <p class="task-title">${esc(t.title)}</p>
+      ${t.notes ? `<p class="task-desc">${esc(t.notes)}</p>` : ''}
       <div class="task-meta">${taskChipsHTML(t)}</div>
       <div class="task-card-actions">
         <button type="button" data-taskact="edit" data-id="${t.id}">✎ Edit</button>
@@ -9266,6 +9287,7 @@ function focusCardBodyHTML(item) {
   if ((item.renewal || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-blue">Renewal</span>');
   if ((item.pendingLegal || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-critical">Pending Legal</span>');
   if ((item.pendingVendor || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-warning">Pending Vendor</span>');
+  if ((item.pendingDocusign || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-violet">Pending DocuSign</span>');
   if (item.status === 'ONHOLD') meta.push(statusBadge(item.status));
   meta.push(`<span>Procurement: ${esc(item.procurement) || '—'}</span>`);
   meta.push(`<span>ExCo: ${esc(item.exco) || '—'}</span>`);
@@ -9406,6 +9428,7 @@ function itemDetailHTML(item) {
   if ((item.renewal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-blue">Renewal</span>');
   if ((item.pendingLegal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-critical">Pending Legal</span>');
   if ((item.pendingVendor || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-warning">Pending Vendor</span>');
+  if ((item.pendingDocusign || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-violet">Pending DocuSign</span>');
 
   const legalView = !!(state.view && state.view.type === 'legal');
   const showLegalAction = legalView || isProcurementView();
@@ -9435,6 +9458,7 @@ function itemDetailHTML(item) {
       ${field('Pending Legal', pendingCell(item.pendingLegal))}
       ${field('Date Sent to Legal', dateSentCell(item))}
       ${field('Pending Vendor', pendingCell(item.pendingVendor))}
+      ${field('Pending DocuSign', pendingCell(item.pendingDocusign))}
       ${showLegalAction ? field('Legal Action', legalActionCell(item, legalView)) : ''}
       ${field('PR on Kissflow', esc(item.kissflow))}
     </div>
@@ -9494,7 +9518,7 @@ function diffRecord(oldR, newR) {
     ['kissflow', 'Kissflow'], ['procurement', 'Procurement'], ['exco', 'ExCo'],
     ['responsible', 'Responsible'], ['legal', 'Legal'], ['legalComments', 'Legal comments'],
     ['pendingLegal', 'Pending legal'], ['dateSentToLegal', 'Date sent to legal', v => v || '—'],
-    ['pendingVendor', 'Pending vendor'], ['comments', 'Comments'],
+    ['pendingVendor', 'Pending vendor'], ['pendingDocusign', 'Pending DocuSign'], ['comments', 'Comments'],
   ];
   const diffs = [];
   fields.forEach(([key, label, fmt]) => {
@@ -9718,6 +9742,7 @@ function openModal(item) {
   document.getElementById('m-dateSentToLegal').value = item && item.dateSentToLegal ? item.dateSentToLegal : '';
   updateDateSentEnabled();
   document.getElementById('m-pendingVendor').value = item ? item.pendingVendor : '';
+  document.getElementById('m-pendingDocusign').value = item ? item.pendingDocusign : '';
 
   // Legal Comments is Legal's own input — Procurement can see it, but not edit it here.
   // A read-only "Legal action" status line (completed/pending) sits alongside it so
@@ -9753,7 +9778,7 @@ function updateDateSentEnabled() {
 // keeps the original, looser rules (just Vendor + Description), unchanged.
 const PROCUREMENT_MANDATORY_IDS = [
   'm-priority', 'm-renewal', 'm-status', 'm-kissflow', 'm-procurement',
-  'm-exco', 'm-responsible', 'm-legal', 'm-pendingLegal', 'm-pendingVendor', 'm-comments',
+  'm-exco', 'm-responsible', 'm-legal', 'm-pendingLegal', 'm-pendingVendor', 'm-pendingDocusign', 'm-comments',
 ];
 function applyFieldRequirements() {
   const mandatory = isProcurementView();
@@ -9802,6 +9827,7 @@ function onModalSubmit(e) {
     pendingLegal: document.getElementById('m-pendingLegal').value,
     dateSentToLegal: document.getElementById('m-pendingLegal').value === 'Yes' ? (document.getElementById('m-dateSentToLegal').value || null) : null,
     pendingVendor: document.getElementById('m-pendingVendor').value,
+    pendingDocusign: document.getElementById('m-pendingDocusign').value,
     legalComments: document.getElementById('m-legalComments').value.trim(),
     comments: document.getElementById('m-comments').value.trim(),
   };
@@ -10003,11 +10029,11 @@ function exportCSV() {
     cols = ['Vendor', 'Description', 'Renewal Contract', 'Yearly TCV', 'Status', 'Source', 'Procurement', 'ExCo', 'Legal', 'Comments', 'Closed Date'];
     rows = visibleClosedItems().filtered.map(i => [i.vendor, i.description, i.renewal || '', i.tcv ?? '', STATUS_META.CLOSED.label, i.source === 'archive' ? 'Archive' : 'This cycle', i.procurement, i.exco, i.legal, i.comments, i.closedDate || '']);
   } else {
-    cols = ['Priority', 'Vendor', 'Description', 'Renewal Contract', 'Yearly TCV', 'Expiry', 'Status', 'Procurement', 'ExCo', 'Responsible', 'Legal', 'Pending Legal', 'Legal Action Completed', 'Date Sent to Legal', 'Pending Vendor', 'Legal Comments', 'Comments'];
+    cols = ['Priority', 'Vendor', 'Description', 'Renewal Contract', 'Yearly TCV', 'Expiry', 'Status', 'Procurement', 'ExCo', 'Responsible', 'Legal', 'Pending Legal', 'Legal Action Completed', 'Date Sent to Legal', 'Pending Vendor', 'Pending DocuSign', 'Legal Comments', 'Comments'];
     rows = visibleActiveItems().filtered.map(i => [
       (PRIORITY_META[i.priority] || {}).label || i.priority, i.vendor, i.description, i.renewal || '', i.tcv ?? '', i.expiry || '',
       (STATUS_META[i.status] || {}).label || i.status, i.procurement, i.exco, i.responsible, i.legal,
-      i.pendingLegal || '', i.legalCompleted || '', i.dateSentToLegal || '', i.pendingVendor || '', i.legalComments, i.comments,
+      i.pendingLegal || '', i.legalCompleted || '', i.dateSentToLegal || '', i.pendingVendor || '', i.pendingDocusign || '', i.legalComments, i.comments,
     ]);
   }
   const csv = [cols.join(',')].concat(rows.map(r => r.map(csvEscape).join(','))).join('\r\n');
@@ -10034,6 +10060,7 @@ function importData(file) {
         if (i.legalCompleted === undefined) i.legalCompleted = '';
         if (i.legalCompletedDate === undefined) i.legalCompletedDate = null;
         if (i.pendingVendor === undefined) i.pendingVendor = '';
+        if (i.pendingDocusign === undefined) i.pendingDocusign = '';
       });
       state.log = payload.log || state.log;
       if (payload.lists) state.lists = payload.lists; else initLists();
@@ -10082,7 +10109,7 @@ function viewLabel() {
 // wants to check on them. Pulled out of selectView so chart clicks (goToFilteredTable)
 // can rebuild the same OPEN-only base without duplicating this list.
 function applyViewDefaultFilters(type, person) {
-  state.filters = { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [], pendingVendor: [] };
+  state.filters = { search: '', priority: [], status: ['OPEN'], renewal: [], procurement: [], exco: [], legal: [], pending: [], pendingVendor: [], pendingDocusign: [] };
   if (type === 'cfo') state.filters.priority = ['2', '3'];
   if (type === 'legal') state.filters.pending = ['yes'];
   if (type === 'procurement-individual') state.filters.procurement = [person];
@@ -10425,7 +10452,7 @@ async function boot() {
     renderActive();
   });
   document.getElementById('clearFilters').addEventListener('click', () => {
-    state.filters = { search: '', priority: [], status: [], renewal: [], procurement: [], exco: [], legal: [], pending: [], pendingVendor: [] };
+    state.filters = { search: '', priority: [], status: [], renewal: [], procurement: [], exco: [], legal: [], pending: [], pendingVendor: [], pendingDocusign: [] };
     // An individual procurement view stays locked to its person even after clearing —
     // its Procurement filter is hidden precisely because it must never change here.
     if (state.view && state.view.type === 'procurement-individual') state.filters.procurement = [state.view.person];
