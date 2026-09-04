@@ -8337,7 +8337,22 @@ async function loadProjectsData() {
     try {
       const p = await supa.from('projects').select('*').order('created_at', { ascending: true });
       if (p.error) throw p.error;
-      state.projects = (p.data || []).map(rowToProject);
+      const remote = (p.data || []).map(rowToProject);
+      if (remote.length === 0) {
+        // An empty result is ambiguous: it might mean the shared table genuinely has
+        // no tasks, OR it might mean PROJECTS_SETUP_SQL was *just* run and this is the
+        // first successful connection — in which case this browser's local copy (built
+        // up while there was no shared table to sync to) is the real data, and blindly
+        // saving the empty remote result over it would erase it for good. Prefer the
+        // local copy whenever it's non-empty, and push it up to seed the now-existing
+        // shared table, rather than trusting "empty" as authoritative.
+        loadProjectsLocal();
+        state.projectsOnline = true;
+        if (state.projects.length) state.projects.forEach(t => pushProjectRow(t));
+        else saveProjectsLocal();
+        return;
+      }
+      state.projects = remote;
       state.projectsOnline = true;
       saveProjectsLocal();
       return;
@@ -10116,7 +10131,7 @@ function exportCSV() {
 }
 function exportBackup() {
   const statusLabels = { OPEN: STATUS_META.OPEN.label, ONHOLD: STATUS_META.ONHOLD.label, CLOSED: STATUS_META.CLOSED.label };
-  const payload = { exportedAt: new Date().toISOString(), items: state.items, log: state.log, lists: state.lists, statusLabels };
+  const payload = { exportedAt: new Date().toISOString(), items: state.items, log: state.log, lists: state.lists, statusLabels, projects: state.projects };
   downloadBlob(JSON.stringify(payload, null, 2), 'application/json', `contract-priority-list-backup_${todayISO()}.json`);
   toast('Backup saved — re-import this file next session to continue');
 }
@@ -10141,6 +10156,9 @@ function importData(file) {
       if (payload.statusLabels) {
         ['OPEN', 'ONHOLD', 'CLOSED'].forEach(code => { if (payload.statusLabels[code]) STATUS_META[code].label = payload.statusLabels[code]; });
       }
+      // Older backups (before the Project Tracker had its own recovery net) won't have
+      // a `projects` key — leave the current task board alone rather than wiping it.
+      if (payload.projects) { state.projects = payload.projects; saveProjectsLocal(); }
       state.log.push({ ts: new Date().toISOString(), user: currentUserName(), action: 'import', vendor: '', description: '', details: [`Imported ${payload.items.length} contracts from a previously saved backup (originally exported ${payload.exportedAt ? fmtDateTime(payload.exportedAt) : 'unknown time'}).`] });
       renderAll();
       toast('Backup imported');
