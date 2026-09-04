@@ -651,6 +651,17 @@
   }
   .helpbar button { margin-left: auto; }
 
+  /* Deliberately louder than .helpbar (critical colors, no dismiss button) — this warns
+     about silently-failing saves, so it shouldn't be easy to miss or wave away. */
+  .schema-warning-bar {
+    background: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical);
+    border-radius: 10px; padding: 12px 14px; font-size: 12.5px; line-height: 1.6; margin-bottom: 14px;
+  }
+  .schema-warning-bar code {
+    background: rgba(0,0,0,0.08); border-radius: 4px; padding: 1px 5px; font-size: 11.5px;
+  }
+  .theme-dark .schema-warning-bar code { background: rgba(255,255,255,0.12); }
+
   /* ---------- Lock screen ---------- */
   .lockscreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
   .lockscreen[hidden] { display: none; }
@@ -8204,6 +8215,15 @@ const SEED = {
 };
 const PROCUREMENT_PEOPLE = ['Abhijith', 'Burhan', 'Cyriac', 'Evita', 'Evita/Burhan', 'Jonathan', 'Mohamed', 'Noora'];
 
+// Columns added to the `contracts` table after the original seed.sql — each needs its
+// own migration SQL run once in Supabase (see the "* Field Setup - Wio.sql" files).
+// Listed here so loadData() can detect a live table that's missing one and warn loudly
+// instead of letting every save silently fail. sql names the exact file to run.
+const REQUIRED_CONTRACT_COLUMNS = [
+  { key: 'pending_vendor', label: 'Pending Vendor', sql: 'Pending Vendor Field Setup - Wio.sql' },
+  { key: 'pending_docusign', label: 'Pending DocuSign', sql: 'Pending DocuSign Field Setup - Wio.sql' },
+];
+
 // ============ Supabase config ============
 const SUPABASE_URL = 'https://amtqlhqmcpnrfhvrhbqj.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdHFsaHFtY3BucmZodnJoYnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDk2NjgsImV4cCI6MjA5NDkyNTY2OH0.lQH5Syx2D1Xk-n1pHpL_V4QgRv1Y_qKl2XyF3CQ681o';
@@ -8223,6 +8243,7 @@ let state = {
   theme: 'light',
   tab: 'active',
   online: false,     // true once successfully connected to a shared Supabase database
+  schemaWarning: [], // columns REQUIRED_CONTRACT_COLUMNS expects but the live table doesn't have — see loadData()
   view: null,        // { type: 'cfo'|'legal'|'procurement-all'|'procurement-individual', person }
   // Each of these (besides search) is an array of selected values — an empty array
   // means "no restriction" (everything shown), matching how the old "All ___" option worked.
@@ -8366,6 +8387,20 @@ async function loadData() {
         supa.from('status_labels').select('*'),
       ]);
       if (c.error) throw c.error;
+      // Detect a live database that's missing a column the app expects (e.g. because a
+      // migration SQL script hasn't been run yet on this Supabase project). A missing
+      // column makes every upsert of a row include a key Postgres rejects, which fails
+      // the ENTIRE save — not just that one field — usually with only a toast to show
+      // for it. Checking key *presence* (not just null-ness) on a real fetched row tells
+      // us definitively whether the column exists at all, so we can warn loudly instead
+      // of letting saves fail quietly. Skipped when the table is empty (nothing to check).
+      state.schemaWarning = [];
+      if (c.data && c.data.length) {
+        const sample = c.data[0];
+        REQUIRED_CONTRACT_COLUMNS.forEach(col => {
+          if (!(col.key in sample)) state.schemaWarning.push(col);
+        });
+      }
       state.items = (c.data || []).map(rowToItem);
       state.log = (l.data || []).map(rowToLog);
       state.lists = {};
@@ -8383,6 +8418,7 @@ async function loadData() {
     } catch (err) {
       console.error('Could not load from Supabase — falling back to local starter data.', err);
       state.online = false;
+      state.schemaWarning = [];
     }
   }
   loadSeedLocal();
@@ -8398,6 +8434,7 @@ function subscribeRealtime() {
     clearTimeout(pending);
     pending = setTimeout(async () => {
       await loadData();
+      updateConnectionBadge();
       renderAll();
     }, 250);
   };
@@ -9514,6 +9551,33 @@ function updateConnectionBadge() {
       : 'Could not reach the shared database right now — showing local starter data only. Check your connection and reload.';
     if (help) help.querySelector('span').innerHTML = 'ℹ️ This tool lives in your browser only — edits aren\'t shared live between people. Use <b>Export CSV</b> to share a snapshot, or <b>Backup</b> + <b>Import</b> to carry your full working session forward.';
   }
+  renderSchemaWarning();
+}
+// A live connection with a missing column is worse than being offline: every edit LOOKS
+// like it saved (a normal "Contract updated" toast fires regardless), but the write to
+// Supabase silently fails behind it because the row includes a column Postgres doesn't
+// have — and the only trace is a toast that fades in 2.4s, or a console error nobody's
+// watching for. This banner stays up (not a toast, doesn't auto-dismiss, reappears on
+// every reload) for as long as loadData() keeps finding the column missing, so it can't
+// be missed or forgotten about the way a toast can.
+function renderSchemaWarning() {
+  let box = document.getElementById('schemaWarningBar');
+  if (!state.online || !state.schemaWarning || !state.schemaWarning.length) {
+    if (box) box.hidden = true;
+    return;
+  }
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'schemaWarningBar';
+    box.className = 'schema-warning-bar';
+    const help = document.getElementById('helpBar');
+    (help && help.parentNode ? help.parentNode : document.body).insertBefore(box, help ? help.nextSibling : document.body.firstChild);
+  }
+  const cols = state.schemaWarning;
+  box.innerHTML = `⚠️ <b>Your shared database is missing ${cols.length === 1 ? 'a column' : 'columns'} this version of the app expects: ${cols.map(c => `<code>${esc(c.key)}</code>`).join(', ')}.</b>
+    Saves that touch ${cols.length === 1 ? 'this field' : 'these fields'} (${cols.map(c => esc(c.label)).join(', ')}) will look like they worked — you'll still see a "Contract updated" toast — but the change will silently fail to reach the shared database and will be lost on reload.
+    Run ${cols.map(c => `<code>${esc(c.sql)}</code>`).join(' and ')} once in your Supabase SQL editor to fix this, then reload.`;
+  box.hidden = false;
 }
 
 // ============ CRUD ============
