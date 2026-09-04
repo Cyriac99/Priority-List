@@ -48,6 +48,12 @@
     --blue-bg: #f1ecfd;
     --violet-bg: #f3ecfe;
 
+    /* A dedicated "true blue" (cobalt) — kept distinct from --blue, which is the
+       indigo-violet brand accent already used for Renewal/Open badges. Used for
+       the Pending Legal flag so it doesn't collide with those. */
+    --cobalt: #1c64d8;
+    --cobalt-bg: #e7f0fe;
+
     --shadow: 0 1px 2px rgba(14,14,20,0.05), 0 4px 16px rgba(14,14,20,0.06);
     --shadow-lg: 0 8px 24px rgba(14,14,20,0.14), 0 2px 6px rgba(14,14,20,0.08);
   }
@@ -86,6 +92,9 @@
     --critical-bg: #3d1616;
     --blue-bg: #241b4a;
     --violet-bg: #2e2352;
+
+    --cobalt: #6ea4ff;
+    --cobalt-bg: #16264a;
 
     --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.35);
     --shadow-lg: 0 8px 30px rgba(0,0,0,0.5);
@@ -465,6 +474,7 @@
   .theme-dark .badge-warning { color: var(--warning); }
   .badge-good     { background: var(--good-bg); color: var(--success-text); }
   .badge-blue     { background: var(--blue-bg); color: var(--blue); }
+  .badge-cobalt   { background: var(--cobalt-bg); color: var(--cobalt); }
   .badge-violet   { background: var(--violet-bg); color: var(--violet); }
   .badge-muted    { background: var(--gridline); color: var(--text-secondary); }
   .pending-yes { color: var(--critical); font-weight: 700; }
@@ -9074,7 +9084,7 @@ function kpiTileDefs(baseItems, filteredItems) {
     { key: 'shown', val: filteredItems.length, lbl: filtersActive ? 'Contracts shown (filtered)' : 'Contracts to be signed', color: 'var(--blue)' },
     { key: 'dueToday', val: dueToday, lbl: 'Due today', color: 'var(--critical)', active: state.filters.priority.includes('1') },
     { key: 'dueThisWeek', val: dueThisWeek, lbl: 'Due this week', color: 'var(--serious)', active: state.filters.priority.includes('2') },
-    { key: 'pendingLegal', val: pendingLegal, lbl: 'Pending legal action', color: 'var(--critical)', active: state.filters.pending.includes('yes') },
+    { key: 'pendingLegal', val: pendingLegal, lbl: 'Pending legal action', color: 'var(--cobalt)', active: state.filters.pending.includes('yes') },
     { key: 'tcv', val: 'AED ' + (totalTCV >= 1e6 ? (totalTCV/1e6).toFixed(1)+'M' : totalTCV >= 1e3 ? (totalTCV/1e3).toFixed(0)+'K' : totalTCV), lbl: 'TCV pending signature (of items priced)', color: 'var(--good)' },
   ];
 }
@@ -9285,7 +9295,7 @@ const PRIORITY_BORDER = { 1: 'var(--critical)', 2: 'var(--serious)', 3: 'var(--w
 function focusCardBodyHTML(item) {
   const meta = [];
   if ((item.renewal || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-blue">Renewal</span>');
-  if ((item.pendingLegal || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-critical">Pending Legal</span>');
+  if ((item.pendingLegal || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-cobalt">Pending Legal</span>');
   if ((item.pendingVendor || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-warning">Pending Vendor</span>');
   if ((item.pendingDocusign || '').toLowerCase() === 'yes') meta.push('<span class="badge badge-violet">Pending DocuSign</span>');
   if (item.status === 'ONHOLD') meta.push(statusBadge(item.status));
@@ -9426,7 +9436,7 @@ let detailViewItemId = null;
 function itemDetailHTML(item) {
   const badges = [priorityBadge(item.priority), statusBadge(item.status)];
   if ((item.renewal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-blue">Renewal</span>');
-  if ((item.pendingLegal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-critical">Pending Legal</span>');
+  if ((item.pendingLegal || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-cobalt">Pending Legal</span>');
   if ((item.pendingVendor || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-warning">Pending Vendor</span>');
   if ((item.pendingDocusign || '').toLowerCase() === 'yes') badges.push('<span class="badge badge-violet">Pending DocuSign</span>');
 
